@@ -1,0 +1,263 @@
+Build a Chrome Extension (Manifest V3) called "Applywise".
+
+## PURPOSE
+Single job: User uploads their resume PDF once. Gemini AI reads
+it and extracts the complete profile automatically. When they 
+open any job application page, AI scans all form fields and 
+autofills everything. No login. No server. All data stored 
+locally in chrome.storage.local.
+
+---
+
+## RESUME INPUT — TWO WAYS
+
+### Primary: PDF Upload (Recommended)
+- User uploads resume PDF in the popup
+- Send PDF as base64 to Gemini API using inline_data
+- Gemini extracts ALL fields automatically into a JSON profile
+- No manual entry needed
+- API endpoint:
+  POST https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent
+  Header: X-goog-api-key: API_KEY
+  Body: { contents: [{ parts: [ { inline_data: { mime_type: "application/pdf", data: BASE64 } }, { text: EXTRACTION_PROMPT } ] }] }
+
+### Secondary: Manual Entry (Fallback)
+User can manually fill/edit any field after PDF extraction.
+Fields are pre-populated from PDF, user just reviews and corrects.
+
+---
+
+## RESUME DATA TO STORE
+
+### 1. Personal Info
+- First Name, Last Name, Full Name
+- Email, Phone, Alternate Phone
+- City, State, Country, PIN Code
+- Date of Birth, Gender
+- LinkedIn URL, GitHub URL, Portfolio URL
+
+### 2. Professional Summary
+- Current Designation
+- Current Company
+- Total Experience (years + months)
+- Current CTC (LPA), Expected CTC (LPA)
+- Notice Period (days)
+- Preferred Job Location(s)
+- Work Mode preference (Remote / Hybrid / On-site)
+- Professional Summary / About Me (paragraph)
+
+### 3. Skills
+- Primary Skills (comma separated)
+- Secondary / Tools (comma separated)
+- Programming Languages
+- Spoken Languages
+
+### 4. Work Experience (multiple entries)
+Each entry:
+- Company Name
+- Job Title / Designation
+- Start Date, End Date (or "Present")
+- Employment Type (Full-time / Contract / Internship)
+- Location
+- Key Responsibilities / Achievements (textarea)
+
+### 5. Education (multiple entries)
+Each entry:
+- Degree / Course Name
+- Institution / University
+- Start Year, End Year
+- Percentage / CGPA
+- Stream / Specialization
+
+### 6. Certifications (multiple entries)
+Each entry:
+- Certificate Name
+- Issuing Organization
+- Issue Date, Expiry Date
+- Certificate ID / URL
+
+### 7. Projects (multiple entries)
+Each entry:
+- Project Name
+- Tech Stack Used
+- Description (2-3 lines)
+- Project URL / GitHub Link
+- Duration
+
+### 8. Achievements & Awards
+- Free text list (one per line)
+
+### 9. Personal Details (Indian job forms)
+- Father's Name
+- Marital Status
+- Nationality
+- Category (General / OBC / SC / ST)
+- Differently Abled (Yes/No)
+- Permanent Address
+- Current Address
+
+---
+
+## PDF EXTRACTION PROMPT (send to Gemini)
+
+"You are a resume parser. Extract ALL information from this 
+resume PDF and return ONLY a JSON object with these exact keys.
+Return null for missing fields. No markdown, no explanation,
+just raw JSON.
+
+{
+  firstName, lastName, fullName, email, phone, alternatePhone,
+  city, state, country, pinCode, dateOfBirth, gender,
+  linkedin, github, portfolio,
+  currentDesignation, currentCompany, totalExperience,
+  currentCTC, expectedCTC, noticePeriod,
+  preferredLocations, workMode, summary,
+  primarySkills, secondarySkills, programmingLanguages, spokenLanguages,
+  fathersName, maritalStatus, nationality, category,
+  permanentAddress, currentAddress,
+  experiences: [{ company, role, from, to, type, location, description }],
+  education: [{ degree, institution, from, to, percentage, stream }],
+  certifications: [{ name, issuer, date, expiry, id, url }],
+  projects: [{ name, techStack, description, url, duration }],
+  achievements: []
+}"
+
+---
+
+## AUTOFILL ENGINE (Content Script)
+
+When user clicks "⚡ Fill This Page":
+
+1. SCAN: Collect all input, textarea, select on the page
+2. Extract label for each field using ALL methods:
+   - <label for="id">
+   - aria-label attribute
+   - placeholder attribute
+   - name / id attribute
+   - data-* attributes
+   - Parent/sibling text nodes
+   - Nearby <span> or <p> text
+3. MATCH: Send field labels + profile JSON to Gemini API
+4. Gemini returns JSON map: { fieldLabel: valueToFill }
+5. FILL: Native value setter + dispatch input/change/keyup
+   (works with React / Vue / Angular)
+6. Cover letter fields: Gemini generates custom 150-word paragraph
+7. Select dropdowns: match closest option text
+8. Show floating toast: "✅ Filled X fields"
+
+## Gemini Field Mapping Prompt:
+"You are a job autofill assistant.
+Form fields on this page: [LABELS_ARRAY]
+Candidate profile: [PROFILE_JSON]
+Job description (if found on page): [JD_TEXT]
+
+Return ONLY a valid JSON object mapping each field label to
+the correct profile value. Use null for no match.
+For cover letter / about / message / why fields: write a
+150-word tailored professional paragraph using the JD context.
+No markdown. No explanation. Raw JSON only."
+
+---
+
+## GEMINI API INTEGRATION
+
+Endpoint:
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent
+Headers: Content-Type: application/json, X-goog-api-key: {API_KEY}
+
+Body for text:
+{
+  "contents": [{
+    "parts": [{ "text": "YOUR_PROMPT" }]
+  }]
+}
+
+Body for PDF:
+{
+  "contents": [{
+    "parts": [
+      { "inline_data": { "mime_type": "application/pdf", "data": "BASE64_PDF" } },
+      { "text": "EXTRACTION_PROMPT" }
+    ]
+  }]
+}
+
+Parse response: data.candidates[0].content.parts[0].text
+Strip markdown backticks before JSON.parse()
+Always wrap in try/catch — fallback to rule-based matching.
+
+---
+
+## POPUP UI DESIGN
+
+### Onboarding Screen (first launch)
+Step 1: Enter Gemini API key
+Step 2: Upload Resume PDF → "Extracting with Gemini..."
+Step 3: Review extracted profile → "Looks good!"
+→ Goes to main screen
+
+### Main Screen (after setup)
+- Resume filename + "Replace" button at top
+- Profile preview: Name, Role, Company
+- ONE big button: "⚡ Autofill This Page"
+- Quick copy chips below: Email, Phone, Name, Skills, CTC
+- Sidebar nav: Profile | Experience | Education | 
+               Certifications | Projects | Settings
+
+### Design
+- Width: 360px
+- Dark theme: #0c0e13 background
+- Accent: #4fffb0 (mint green)
+- Font: Bricolage Grotesque (display) + DM Mono (mono)
+- Minimal — one purpose, zero clutter
+- Sticky green fill button always visible
+
+---
+
+## SETTINGS TAB
+- Gemini API Key (password input, stored in chrome.storage.local)
+- Replace Resume PDF (re-trigger extraction)
+- Toggle: Highlight filled fields (default ON)
+- Toggle: Auto-generate cover letter (default ON)
+- Danger: Clear all data
+
+---
+
+## SUPPORTED SITES
+1. Naukri.com
+2. LinkedIn Easy Apply
+3. Internshala
+4. Indeed India
+5. Unstop
+6. Wellfound / AngelList
+7. Cutshort
+8. Shine.com
+9. WorkIndia
+10. Any generic HTML form (fallback)
+
+---
+
+## FLOATING BUTTON (Content Script)
+- Inject a floating ⚡ button (bottom-right, 48px circle)
+- Show on all job sites + any page with 3+ input fields
+- On click: trigger autofill without opening popup
+- Show ✅ / ❌ result on button for 3 seconds
+
+---
+
+## TECH STACK
+- Manifest V3, Vanilla JS, HTML, CSS
+- No React, no npm, no build step
+- chrome.storage.local for all persistence
+- Gemini API (gemini-flash-latest) for PDF extraction + field mapping
+- Auth: X-goog-api-key header (not ?key= query param)
+- Endpoint: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent
+- User provides their own Gemini API key (free tier works)
+
+
+## CONSTRAINTS
+- Zero backend, zero server
+- No login, no accounts
+- All Gemini API calls direct from browser
+- User owns their API key
+- Pure HTML/CSS/JS — load unpacked immediately

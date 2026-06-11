@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Applywise",
+  "version": "1.5.2",
+  "description": "Upload your resume once. AI autofills every job application form.",
+  "permissions": ["storage", "activeTab", "scripting", "identity"],
+  "host_permissions": [
+    "https://accounts.google.com/*",
+    "https://www.googleapis.com/*",
+    "https://*/*",
+    "http://localhost/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  },
+  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "background": { "service_worker": "background/service-worker.js" },
+  "content_scripts": [{
+    "matches": ["https://*/*", "http://*/*"],
+    "js": ["content/content.js"],
+    "css": ["content/content.css"],
+    "run_at": "document_idle"
+  }],
+  "web_accessible_resources": [{
+    "resources": ["lib/pdf.worker.min.js"],
+    "matches": ["<all_urls>"]
+  }]
+}
