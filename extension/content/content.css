@@ -1,0 +1,71 @@
+#applywise-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: #4fffb0;
+  color: #0c0e13;
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 2147483646;
+  box-shadow: 0 4px 20px rgba(79, 255, 176, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+#applywise-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(79, 255, 176, 0.55);
+}
+
+#applywise-fab:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+#applywise-fab.loading {
+  animation: applywise-pulse 1s infinite;
+}
+
+@keyframes applywise-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+#applywise-toast {
+  position: fixed;
+  bottom: 84px;
+  right: 24px;
+  background: #1a1d26;
+  color: #e8eaed;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  z-index: 2147483647;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid #2a2f3a;
+  max-width: 280px;
+  display: none;
+}
+
+#applywise-toast.success {
+  border-color: #4fffb0;
+}
+
+#applywise-toast.error {
+  border-color: #ff6b6b;
+  color: #ffaaaa;
+}
+
+.applywise-highlight {
+  outline: 2px solid #4fffb0 !important;
+  outline-offset: 2px;
+  transition: outline 0.3s;
+}

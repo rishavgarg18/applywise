@@ -1,0 +1,98 @@
+import type { Profile } from "./types";
+
+async function postAi<T>(action: string, body: Record<string, unknown>): Promise<T> {
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, ...body }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "AI request failed");
+  return data.result as T;
+}
+
+export async function extractProfileFromPdf(base64Pdf: string): Promise<Profile> {
+  return postAi<Profile>("extractProfileFromPdf", { base64Pdf });
+}
+
+export async function generateCoverLetter(
+  profile: Profile,
+  jobTitle: string,
+  company: string,
+  jobDescription: string
+): Promise<string> {
+  return postAi<string>("generateCoverLetter", {
+    profile,
+    jobTitle,
+    company,
+    jobDescription,
+  });
+}
+
+export async function generateEmail(
+  profile: Profile,
+  type: "networking" | "followup" | "thankyou",
+  recipientName: string,
+  recipientTitle: string,
+  company: string,
+  jobTitle: string,
+  context: string
+): Promise<string> {
+  return postAi<string>("generateEmail", {
+    profile,
+    type,
+    recipientName,
+    recipientTitle,
+    company,
+    jobTitle,
+    context,
+  });
+}
+
+export async function analyzeATS(
+  profile: Profile,
+  jobDescription: string
+): Promise<{
+  score: number;
+  missingKeywords: string[];
+  suggestions: string[];
+  summary: string;
+}> {
+  return postAi("analyzeATS", { profile, jobDescription });
+}
+
+export async function tailorResumeSection(
+  profile: Profile,
+  jobDescription: string,
+  section: "summary" | "skills" | "experience"
+): Promise<string> {
+  return postAi<string>("tailorResumeSection", {
+    profile,
+    jobDescription,
+    section,
+  });
+}
+
+export async function generateInterviewQuestion(
+  profile: Profile,
+  jobTitle: string,
+  company: string
+): Promise<{ question: string; tip: string }> {
+  return postAi("generateInterviewQuestion", { profile, jobTitle, company });
+}
+
+export async function generateNetworkingMessage(
+  profile: Profile,
+  personName: string,
+  personTitle: string,
+  company: string,
+  jobTitle: string
+): Promise<string> {
+  return postAi<string>("generateNetworkingMessage", {
+    profile,
+    personName,
+    personTitle,
+    company,
+    jobTitle,
+  });
+}

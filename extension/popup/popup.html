@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=360">
+  <title>Applywise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- Login -->
+  <div id="login" class="screen hidden">
+    <div class="login-content">
+      <div class="logo">Apply<span>wise</span></div>
+      <p class="hint">Sign in with Google to use your profile and sync with the web dashboard.</p>
+      <button class="btn google-btn" id="google-signin" type="button">
+        <svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Continue with Google
+      </button>
+      <p class="hint login-footnote">We only use your Google account to identify you — same as the web app.</p>
+      <div id="login-status" class="status hidden"></div>
+    </div>
+  </div>
+
+  <!-- Onboarding -->
+  <div id="onboarding" class="screen hidden">
+    <div class="logo">Apply<span>wise</span></div>
+    <div class="onboarding-steps">
+      <div class="step" data-step="1">
+        <h2>Step 1 — Upload Resume</h2>
+        <p class="hint">PDF only. Gemini extracts your full profile — experience, education, skills, and more.</p>
+        <label class="upload-zone" id="upload-zone">
+          <input type="file" id="resume-upload" accept=".pdf,application/pdf" hidden>
+          <span class="upload-icon">📄</span>
+          <span>Drop PDF or click to upload</span>
+        </label>
+        <div id="extract-status" class="status hidden"></div>
+      </div>
+      <div class="step hidden" data-step="2">
+        <h2>Step 2 — Review</h2>
+        <div id="review-preview" class="review-card"></div>
+        <button class="btn primary" id="finish-onboarding">Looks good!</button>
+      </div>
+    </div>
+    <div class="step-dots">
+      <span class="dot active" data-dot="1"></span>
+      <span class="dot" data-dot="2"></span>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="screen hidden">
+    <header class="header">
+      <div class="logo-sm">Apply<span>wise</span></div>
+      <div class="resume-bar">
+        <span id="resume-name">No resume</span>
+        <button class="btn-text" id="replace-resume">Replace</button>
+      </div>
+    </header>
+
+    <nav class="sidebar">
+      <button class="nav-item active" data-tab="home">Home</button>
+      <button class="nav-item" data-tab="linkedin">LinkedIn</button>
+      <button class="nav-item" data-tab="profile">Profile</button>
+      <button class="nav-item" data-tab="settings">Settings</button>
+    </nav>
+
+    <main class="content">
+      <section id="tab-home" class="tab active">
+        <div class="home-scroll" id="home-scroll">
+          <div class="profile-preview" id="home-preview">
+            <h3 id="preview-name">—</h3>
+            <p id="preview-role">—</p>
+            <p id="preview-company" class="muted">—</p>
+          </div>
+
+          <div class="job-context-card" id="job-context-card">
+            <div class="section-header">
+              <h4>Current Job Page</h4>
+              <button class="btn-text" id="refresh-job" type="button">Refresh</button>
+            </div>
+            <div id="job-context" class="job-context-body muted">Open a job listing to detect role &amp; JD.</div>
+          </div>
+
+          <div class="cover-letter-card" id="cover-letter-card">
+            <div class="section-header">
+              <h4>Cover Letter</h4>
+              <button class="btn-text" id="copy-cover-letter" type="button">Copy</button>
+            </div>
+            <div id="cover-letter-text" class="cover-letter-body muted">Click Generate to create a cover letter with Gemini.</div>
+            <button class="btn secondary btn-sm" id="regenerate-cover" type="button">Generate</button>
+          </div>
+
+          <div id="copy-fields"></div>
+        </div>
+      </section>
+
+      <section id="tab-linkedin" class="tab hidden">
+        <div class="tab-scroll" id="linkedin-scroll">
+          <div class="job-context-card">
+            <div class="section-header">
+              <h4>Referral Targets</h4>
+              <button class="btn-text" id="refresh-linkedin" type="button">Refresh</button>
+            </div>
+            <div id="linkedin-context" class="job-context-body muted">Detecting job &amp; company from current page…</div>
+          </div>
+
+          <div class="linkedin-actions">
+            <button class="btn secondary btn-sm" id="open-li-search" type="button">Search on LinkedIn</button>
+            <button class="btn secondary btn-sm" id="scrape-li-people" type="button">Load from LinkedIn tab</button>
+          </div>
+          <p class="hint linkedin-hint">Open LinkedIn people search for the company, then click “Load from LinkedIn tab” to import profiles.</p>
+
+          <div id="linkedin-people-list" class="linkedin-people-list">
+            <p class="muted">No people loaded yet.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-profile" class="tab hidden">
+        <div class="tab-scroll">
+          <form id="profile-form" class="edit-form"></form>
+          <button class="btn secondary" id="save-profile">Save Profile</button>
+        </div>
+      </section>
+
+      <section id="tab-settings" class="tab hidden">
+        <div class="tab-scroll">
+        <div class="account-card" id="account-card">
+          <img id="account-avatar" class="account-avatar hidden" alt="">
+          <div class="account-details">
+            <div id="account-name" class="account-name">—</div>
+            <div id="account-email" class="account-email muted">—</div>
+          </div>
+          <button class="btn-text" id="sign-out-btn" type="button">Sign out</button>
+        </div>
+        <div class="setting-row">
+          <label>Replace Resume PDF</label>
+          <input type="file" id="settings-resume" accept=".pdf,application/pdf">
+        </div>
+        <div class="setting-row toggle-row">
+          <label>Rules first (saves API calls)</label>
+          <input type="checkbox" id="toggle-rules-first" checked>
+        </div>
+        <div class="setting-row toggle-row">
+          <label>Highlight filled fields</label>
+          <input type="checkbox" id="toggle-highlight" checked>
+        </div>
+        <div class="setting-row toggle-row">
+          <label>Include cover letter in autofill</label>
+          <input type="checkbox" id="toggle-cover-letter" checked>
+        </div>
+        <button class="btn secondary" id="save-settings">Save Settings</button>
+        <button class="btn danger" id="clear-data">Clear All Data</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <button class="btn fill-btn" id="autofill-btn">⚡ Autofill This Page</button>
+      <div id="autofill-status" class="status hidden"></div>
+    </footer>
+  </div>
+
+  <input type="file" id="hidden-resume-input" accept=".pdf,application/pdf" hidden>
+
+  <script src="../lib/pdf.min.js"></script>
+  <script src="../lib/config.js"></script>
+  <script src="../lib/api.js"></script>
+  <script src="../lib/storage.js"></script>
+  <script src="pdf-extract.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
