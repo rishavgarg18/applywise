@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_PREFERENCES,
@@ -14,6 +15,15 @@ import type {
 
 export type { UserDataBundle };
 
+function asJson<T>(value: unknown, fallback: T): T {
+  if (value == null) return fallback;
+  return value as T;
+}
+
+function toJsonValue<T>(value: T): Prisma.InputJsonValue {
+  return value as unknown as Prisma.InputJsonValue;
+}
+
 async function ensureUserData(userId: string) {
   return prisma.userData.upsert({
     where: { userId },
@@ -27,18 +37,18 @@ export async function getUserDataBundle(userId: string): Promise<UserDataBundle>
 
   return {
     profile: row.profile
-      ? ({ ...DEFAULT_PROFILE, ...(row.profile as object) } as Profile)
+      ? { ...DEFAULT_PROFILE, ...asJson<Partial<Profile>>(row.profile, {}) }
       : null,
     settings: {
       ...DEFAULT_SETTINGS,
-      ...((row.settings as Partial<Settings> | null) ?? {}),
+      ...asJson<Partial<Settings>>(row.settings, {}),
     },
     preferences: {
       ...DEFAULT_PREFERENCES,
-      ...((row.preferences as Partial<JobPreferences> | null) ?? {}),
+      ...asJson<Partial<JobPreferences>>(row.preferences, {}),
     },
-    trackedJobs: (row.trackedJobs as TrackedJob[]) ?? [],
-    savedMatches: (row.savedMatches as string[]) ?? [],
+    trackedJobs: asJson<TrackedJob[]>(row.trackedJobs, []),
+    savedMatches: asJson<string[]>(row.savedMatches, []),
     resumeFilename: row.resumeFilename,
     resumePdfBase64: row.resumePdfBase64,
     onboardingDone: row.onboardingDone,
@@ -62,16 +72,20 @@ export async function updateUserData(
   return prisma.userData.update({
     where: { userId },
     data: {
-      ...(updates.profile !== undefined ? { profile: updates.profile } : {}),
-      ...(updates.settings !== undefined ? { settings: updates.settings } : {}),
+      ...(updates.profile !== undefined
+        ? { profile: toJsonValue(updates.profile) }
+        : {}),
+      ...(updates.settings !== undefined
+        ? { settings: toJsonValue(updates.settings) }
+        : {}),
       ...(updates.preferences !== undefined
-        ? { preferences: updates.preferences }
+        ? { preferences: toJsonValue(updates.preferences) }
         : {}),
       ...(updates.trackedJobs !== undefined
-        ? { trackedJobs: updates.trackedJobs }
+        ? { trackedJobs: toJsonValue(updates.trackedJobs) }
         : {}),
       ...(updates.savedMatches !== undefined
-        ? { savedMatches: updates.savedMatches }
+        ? { savedMatches: toJsonValue(updates.savedMatches) }
         : {}),
       ...(updates.resumeFilename !== undefined
         ? { resumeFilename: updates.resumeFilename }
@@ -128,11 +142,11 @@ export async function clearUserData(userId: string) {
   await prisma.userData.update({
     where: { userId },
     data: {
-      profile: null,
-      settings: DEFAULT_SETTINGS,
-      preferences: DEFAULT_PREFERENCES,
-      trackedJobs: [],
-      savedMatches: [],
+      profile: Prisma.JsonNull,
+      settings: toJsonValue(DEFAULT_SETTINGS),
+      preferences: toJsonValue(DEFAULT_PREFERENCES),
+      trackedJobs: toJsonValue([]),
+      savedMatches: toJsonValue([]),
       resumeFilename: null,
       resumePdfBase64: null,
       onboardingDone: false,
