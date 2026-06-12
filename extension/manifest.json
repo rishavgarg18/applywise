@@ -26,7 +26,7 @@
     {
       "matches": [
         "https://applywise-drab.vercel.app/*",
-        "https://applywise-*.vercel.app/*",
+        "https://*.vercel.app/*",
         "http://localhost:3000/*"
       ],
       "js": ["content/bridge.js"],
@@ -36,7 +36,7 @@
   "externally_connectable": {
     "matches": [
       "https://applywise-drab.vercel.app/*",
-      "https://applywise-*.vercel.app/*",
+      "https://*.vercel.app/*",
       "http://localhost:3000/*"
     ]
   },
