@@ -1,42 +1,60 @@
 "use client";
 
+import { EmptyState } from "@/components/app/empty-state";
+import { FormField } from "@/components/app/form-field";
+import {
+  JobTargetFields,
+  hasJobTarget,
+  type JobTargetValues,
+} from "@/components/app/job-target-fields";
 import { PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/page-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input, Textarea } from "@/components/ui/input";
-import { Select } from "@/components/ui/input";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { TextBlockSkeleton } from "@/components/ui/skeleton";
+import { Input, Textarea, Select } from "@/components/ui/input";
 import { useProfile } from "@/hooks/use-profile";
 import { generateEmail } from "@/lib/gemini";
-import { JOB_LISTINGS } from "@/lib/jobs-data";
-import { Copy, Loader2, Check } from "lucide-react";
+import { Copy, Mail, Check } from "lucide-react";
 import { useState } from "react";
 
+const emptyTarget: JobTargetValues = {
+  jobTitle: "",
+  company: "",
+  jobDescription: "",
+};
+
 export default function EmailsPage() {
-  const { profile } = useProfile();
+  const { profile, loaded } = useProfile();
   const [type, setType] = useState<"networking" | "followup" | "thankyou">(
     "networking"
   );
   const [recipientName, setRecipientName] = useState("");
   const [recipientTitle, setRecipientTitle] = useState("");
-  const [selectedJob, setSelectedJob] = useState(JOB_LISTINGS[0].id);
+  const [target, setTarget] = useState<JobTargetValues>(emptyTarget);
   const [context, setContext] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const job = JOB_LISTINGS.find((j) => j.id === selectedJob);
+  const updateTarget = (field: keyof JobTargetValues, value: string) => {
+    setTarget((prev) => ({ ...prev, [field]: value }));
+    setEmail("");
+  };
 
   const generate = async () => {
-    if (!profile || !job) return;
+    if (!profile || !hasJobTarget(target)) return;
     setLoading(true);
+    setEmail("");
     try {
       const result = await generateEmail(
         profile,
         type,
-        recipientName || "Hiring Manager",
-        recipientTitle || "Team Lead",
-        job.company,
-        job.title,
+        recipientName.trim() || "Hiring Manager",
+        recipientTitle.trim() || "Team Lead",
+        target.company.trim(),
+        target.jobTitle.trim(),
         context
       );
       setEmail(result);
@@ -52,114 +70,95 @@ export default function EmailsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  if (!loaded) return <PageSkeleton />;
+
   return (
     <>
       <PageHeader
         title="Outreach Drafts"
-        description="Craft networking emails, follow-ups, and thank-you notes"
+        description="Generate networking emails, follow-ups, and thank-you notes for your target role."
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="space-y-4">
-          <div>
-            <label className="text-xs text-muted uppercase tracking-wide">
-              Email type
-            </label>
+        <Card className="space-y-5">
+          <FormField label="Email type">
             <Select
               value={type}
-              onChange={(e) =>
-                setType(e.target.value as typeof type)
-              }
-              className="mt-2"
+              onChange={(e) => setType(e.target.value as typeof type)}
             >
               <option value="networking">Networking</option>
-              <option value="followup">Application Follow-up</option>
-              <option value="thankyou">Interview Thank-you</option>
+              <option value="followup">Application follow-up</option>
+              <option value="thankyou">Interview thank-you</option>
             </Select>
-          </div>
-          <div>
-            <label className="text-xs text-muted uppercase tracking-wide">
-              Role
-            </label>
-            <Select
-              value={selectedJob}
-              onChange={(e) => setSelectedJob(e.target.value)}
-              className="mt-2"
-            >
-              {JOB_LISTINGS.map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.title} at {j.company}
-                </option>
-              ))}
-            </Select>
-          </div>
+          </FormField>
+
+          <JobTargetFields values={target} onChange={updateTarget} descriptionRows={4} />
+
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted uppercase tracking-wide">
-                Recipient name
-              </label>
+            <FormField label="Recipient name">
               <Input
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}
                 placeholder="Jane Smith"
-                className="mt-2"
               />
-            </div>
-            <div>
-              <label className="text-xs text-muted uppercase tracking-wide">
-                Their title
-              </label>
+            </FormField>
+            <FormField label="Recipient title">
               <Input
                 value={recipientTitle}
                 onChange={(e) => setRecipientTitle(e.target.value)}
                 placeholder="Engineering Manager"
-                className="mt-2"
               />
-            </div>
+            </FormField>
           </div>
-          <div>
-            <label className="text-xs text-muted uppercase tracking-wide">
-              Additional context
-            </label>
+
+          <FormField label="Additional context" hint="Optional details to include in the draft.">
             <Textarea
               value={context}
               onChange={(e) => setContext(e.target.value)}
               placeholder="Any specific details to include..."
-              className="mt-2"
               rows={3}
             />
-          </div>
-          <Button className="w-full" onClick={generate} disabled={loading || !profile}>
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Drafting...
-              </>
-            ) : (
-              "Generate Email"
-            )}
-          </Button>
+          </FormField>
+
+          <LoadingButton
+            className="w-full"
+            onClick={generate}
+            loading={loading}
+            loadingText="Drafting email..."
+            disabled={!profile || !hasJobTarget(target)}
+          >
+            Generate email
+          </LoadingButton>
         </Card>
 
-        <Card>
-          {email ? (
+        <Card className="min-h-[420px]">
+          {loading ? (
+            <TextBlockSkeleton rows={16} />
+          ) : email ? (
             <>
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold">Draft</h3>
+                <h3 className="font-medium">Draft</h3>
                 <Button size="sm" variant="outline" onClick={copy}>
                   {copied ? (
                     <Check className="h-3.5 w-3.5" />
                   ) : (
                     <Copy className="h-3.5 w-3.5" />
                   )}
-                  {copied ? "Copied!" : "Copy"}
+                  {copied ? "Copied" : "Copy"}
                 </Button>
               </div>
-              <Textarea value={email} onChange={(e) => setEmail(e.target.value)} rows={18} />
+              <Textarea
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                rows={18}
+              />
             </>
           ) : (
-            <div className="flex items-center justify-center h-full py-12 text-muted text-sm">
-              Fill in the details and generate your outreach email
-            </div>
+            <EmptyState
+              icon={Mail}
+              title="No draft yet"
+              description="Fill in the role details and recipient information, then generate your outreach email."
+            />
           )}
         </Card>
       </div>

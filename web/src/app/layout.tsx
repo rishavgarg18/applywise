@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/providers/session-provider";
+import { UserDataProvider } from "@/components/providers/user-data-provider";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -30,7 +31,9 @@ export default function RootLayout({
       className={`${outfit.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <UserDataProvider>{children}</UserDataProvider>
+        </AuthProvider>
       </body>
     </html>
   );

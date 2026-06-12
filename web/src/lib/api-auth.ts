@@ -59,18 +59,13 @@ export async function getRequestUser(
   request: Request
 ): Promise<AuthUser | null> {
   const session = await auth();
-  if (session?.user?.email) {
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-    if (user) {
-      return {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        image: user.image,
-      };
-    }
+  if (session?.user?.id && session.user.email) {
+    return {
+      id: session.user.id,
+      email: session.user.email,
+      name: session.user.name ?? null,
+      image: session.user.image ?? null,
+    };
   }
 
   const authHeader = request.headers.get("authorization");

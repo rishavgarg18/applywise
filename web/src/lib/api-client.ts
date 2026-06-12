@@ -27,6 +27,13 @@ export const ApiClient = {
     return request<UserDataBundle>("/api/user");
   },
 
+  async getResume(): Promise<{
+    resumeFilename: string | null;
+    resumePdfBase64: string | null;
+  }> {
+    return request("/api/user/resume");
+  },
+
   async patchUserData(
     updates: Partial<{
       profile: Profile;

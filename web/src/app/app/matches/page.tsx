@@ -1,6 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/page-skeleton";
 import { JobCard } from "@/components/job-card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export default function MatchesPage() {
-  const { profile } = useProfile();
+  const { profile, loaded } = useProfile();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [remoteOnly, setRemoteOnly] = useState(false);
@@ -53,6 +54,8 @@ export default function MatchesPage() {
     };
     await Storage.addTrackedJob(tracked);
   };
+
+  if (!loaded) return <PageSkeleton />;
 
   return (
     <>

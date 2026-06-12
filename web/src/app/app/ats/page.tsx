@@ -1,21 +1,22 @@
 "use client";
 
+import { EmptyState } from "@/components/app/empty-state";
+import { FormField } from "@/components/app/form-field";
 import { PageHeader } from "@/components/app/page-header";
-import { Button } from "@/components/ui/button";
+import { PageSkeleton } from "@/components/app/page-skeleton";
 import { Card } from "@/components/ui/card";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { ResultPanelSkeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/input";
-import { Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useProfile } from "@/hooks/use-profile";
 import { analyzeATS } from "@/lib/gemini";
-import { JOB_LISTINGS } from "@/lib/jobs-data";
-import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { BarChart3, AlertCircle, CheckCircle } from "lucide-react";
 import { useState } from "react";
 
 export default function ATSPage() {
-  const { profile } = useProfile();
-  const [selectedJob, setSelectedJob] = useState(JOB_LISTINGS[0].id);
-  const [customJd, setCustomJd] = useState("");
+  const { profile, loaded } = useProfile();
+  const [jobDescription, setJobDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     score: number;
@@ -24,14 +25,12 @@ export default function ATSPage() {
     summary: string;
   } | null>(null);
 
-  const job = JOB_LISTINGS.find((j) => j.id === selectedJob);
-  const jd = customJd || job?.description || "";
-
   const analyze = async () => {
-    if (!profile || !jd) return;
+    if (!profile || !jobDescription.trim()) return;
     setLoading(true);
+    setResult(null);
     try {
-      const res = await analyzeATS(profile, jd);
+      const res = await analyzeATS(profile, jobDescription.trim());
       setResult(res);
     } catch {
       setResult({
@@ -53,75 +52,63 @@ export default function ATSPage() {
           ? "text-warning"
           : "text-danger";
 
+  if (!loaded) return <PageSkeleton />;
+
   return (
     <>
       <PageHeader
-        title="Resume Health Check"
-        description="See how your resume scores against any job description"
+        title="Resume ATS Score Check"
+        description="Measure how well your resume aligns with a specific job description and get actionable improvements."
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <label className="text-xs text-muted uppercase tracking-wide">
-            Compare against
-          </label>
-          <Select
-            value={selectedJob}
-            onChange={(e) => {
-              setSelectedJob(e.target.value);
-              setResult(null);
-            }}
-            className="mt-2 mb-4"
+          <FormField
+            label="Job description to compare against"
+            hint="Paste the full posting or the requirements section from the role you are targeting."
+            required
           >
-            {JOB_LISTINGS.map((j) => (
-              <option key={j.id} value={j.id}>
-                {j.title} at {j.company}
-              </option>
-            ))}
-          </Select>
-          <label className="text-xs text-muted uppercase tracking-wide">
-            Or paste custom job description
-          </label>
-          <Textarea
-            value={customJd}
-            onChange={(e) => {
-              setCustomJd(e.target.value);
-              setResult(null);
-            }}
-            placeholder={job?.description}
-            className="mt-2"
-            rows={8}
-          />
-          <Button
-            className="w-full mt-4"
+            <Textarea
+              value={jobDescription}
+              onChange={(e) => {
+                setJobDescription(e.target.value);
+                setResult(null);
+              }}
+              placeholder="Paste the job description here..."
+              rows={12}
+            />
+          </FormField>
+          <LoadingButton
+            className="w-full mt-5"
             onClick={analyze}
-            disabled={loading || !profile}
+            loading={loading}
+            loadingText="Analyzing resume..."
+            disabled={!profile || !jobDescription.trim()}
           >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
-              </>
-            ) : (
-              "Run Health Check"
-            )}
-          </Button>
+            Run ATS Score Check
+          </LoadingButton>
         </Card>
 
-        <Card>
-          {result ? (
+        <Card className="min-h-[420px]">
+          {loading ? (
+            <ResultPanelSkeleton />
+          ) : result ? (
             <div>
               <div className="text-center mb-6">
-                <p className={`text-6xl font-bold ${scoreColor}`}>
+                <p className={`text-5xl font-semibold tabular-nums ${scoreColor}`}>
                   {result.score}
                 </p>
-                <p className="text-sm text-muted mt-1">ATS Score out of 100</p>
+                <p className="text-sm text-muted mt-1">ATS score out of 100</p>
               </div>
-              <p className="text-sm leading-relaxed mb-6">{result.summary}</p>
+              <p className="text-sm leading-relaxed mb-6 text-foreground/90">
+                {result.summary}
+              </p>
 
               {result.missingKeywords.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs text-muted uppercase tracking-wide mb-2 flex items-center gap-1">
-                    <AlertCircle className="h-3.5 w-3.5" /> Missing Keywords
+                <div className="mb-5">
+                  <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                    <AlertCircle className="h-4 w-4 text-warning" />
+                    Missing keywords
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {result.missingKeywords.map((kw) => (
@@ -134,30 +121,26 @@ export default function ATSPage() {
               )}
 
               <div>
-                <p className="text-xs text-muted uppercase tracking-wide mb-2 flex items-center gap-1">
-                  <CheckCircle className="h-3.5 w-3.5" /> Suggestions
+                <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                  <CheckCircle className="h-4 w-4 text-success" />
+                  Recommendations
                 </p>
                 <ul className="space-y-2">
                   {result.suggestions.map((s, i) => (
-                    <li
-                      key={i}
-                      className="text-sm text-muted flex gap-2"
-                    >
-                      <span className="text-accent">→</span> {s}
+                    <li key={i} className="text-sm text-muted flex gap-2">
+                      <span className="text-accent shrink-0">•</span>
+                      <span>{s}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-              <div className="h-20 w-20 rounded-full border-4 border-border flex items-center justify-center mb-4">
-                <span className="text-2xl text-muted">?</span>
-              </div>
-              <p className="text-muted">
-                Select a job and run the health check to see your ATS score
-              </p>
-            </div>
+            <EmptyState
+              icon={BarChart3}
+              title="No analysis yet"
+              description="Paste a job description and run the ATS score check to see how your resume compares."
+            />
           )}
         </Card>
       </div>

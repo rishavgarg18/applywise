@@ -1,11 +1,14 @@
 "use client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/page-skeleton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useProfile } from "@/hooks/use-profile";
 import { Storage } from "@/lib/storage";
 import type { ApplicationStatus, TrackedJob } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ExternalLink, Trash2 } from "lucide-react";
 
 const COLUMNS: { status: ApplicationStatus; label: string; color: string }[] = [
@@ -17,24 +20,58 @@ const COLUMNS: { status: ApplicationStatus; label: string; color: string }[] = [
 ];
 
 export default function TrackerPage() {
+  const { trackedJobs: contextJobs, loaded, refresh } = useProfile();
   const [jobs, setJobs] = useState<TrackedJob[]>([]);
+  const [syncing, setSyncing] = useState(true);
+
+  const syncJobs = useCallback(async () => {
+    setSyncing(true);
+    const data = await Storage.getTrackedJobs();
+    setJobs(data);
+    setSyncing(false);
+  }, []);
 
   useEffect(() => {
-    Storage.getTrackedJobs().then(setJobs);
-  }, []);
+    if (loaded) {
+      setJobs(contextJobs);
+      setSyncing(false);
+    }
+  }, [loaded, contextJobs]);
 
   const moveJob = async (id: string, status: ApplicationStatus) => {
     await Storage.updateTrackedJob(id, {
       status,
       ...(status === "applied" ? { appliedAt: new Date().toISOString() } : {}),
     });
-    setJobs(await Storage.getTrackedJobs());
+    await refresh();
+    await syncJobs();
   };
 
   const removeJob = async (id: string) => {
     await Storage.removeTrackedJob(id);
-    setJobs(await Storage.getTrackedJobs());
+    await refresh();
+    await syncJobs();
   };
+
+  if (!loaded || syncing) {
+    return (
+      <>
+        <PageHeader
+          title="Pipeline Board"
+          description="Track every application from saved to offer"
+        />
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {COLUMNS.map((col) => (
+            <div key={col.status} className="min-w-[260px] flex-1 space-y-3">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -91,7 +128,7 @@ export default function TrackerPage() {
                       onChange={(e) =>
                         moveJob(job.id, e.target.value as ApplicationStatus)
                       }
-                      className="mt-3 w-full rounded-lg border border-border bg-surface2 px-2 py-1.5 text-xs"
+                      className="mt-3 w-full rounded-md border border-border bg-surface2 px-2 py-1.5 text-xs"
                     >
                       {COLUMNS.map((c) => (
                         <option key={c.status} value={c.status}>
@@ -102,7 +139,7 @@ export default function TrackerPage() {
                   </Card>
                 ))}
                 {colJobs.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted">
+                  <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted">
                     No jobs here
                   </div>
                 )}

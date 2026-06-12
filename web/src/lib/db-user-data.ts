@@ -24,6 +24,19 @@ function toJsonValue<T>(value: T): Prisma.InputJsonValue {
   return value as unknown as Prisma.InputJsonValue;
 }
 
+function defaultBundle(): UserDataBundle {
+  return {
+    profile: null,
+    settings: { ...DEFAULT_SETTINGS },
+    preferences: { ...DEFAULT_PREFERENCES },
+    trackedJobs: [],
+    savedMatches: [],
+    resumeFilename: null,
+    resumePdfBase64: null,
+    onboardingDone: false,
+  };
+}
+
 async function ensureUserData(userId: string) {
   return prisma.userData.upsert({
     where: { userId },
@@ -32,8 +45,12 @@ async function ensureUserData(userId: string) {
   });
 }
 
-export async function getUserDataBundle(userId: string): Promise<UserDataBundle> {
-  const row = await ensureUserData(userId);
+export async function getUserDataBundle(
+  userId: string,
+  options?: { includeResume?: boolean }
+): Promise<UserDataBundle> {
+  const row = await prisma.userData.findUnique({ where: { userId } });
+  if (!row) return defaultBundle();
 
   return {
     profile: row.profile
@@ -50,8 +67,20 @@ export async function getUserDataBundle(userId: string): Promise<UserDataBundle>
     trackedJobs: asJson<TrackedJob[]>(row.trackedJobs, []),
     savedMatches: asJson<string[]>(row.savedMatches, []),
     resumeFilename: row.resumeFilename,
-    resumePdfBase64: row.resumePdfBase64,
+    resumePdfBase64: options?.includeResume ? row.resumePdfBase64 : null,
     onboardingDone: row.onboardingDone,
+  };
+}
+
+export async function getUserResume(userId: string) {
+  const row = await prisma.userData.findUnique({
+    where: { userId },
+    select: { resumeFilename: true, resumePdfBase64: true },
+  });
+
+  return {
+    resumeFilename: row?.resumeFilename ?? null,
+    resumePdfBase64: row?.resumePdfBase64 ?? null,
   };
 }
 

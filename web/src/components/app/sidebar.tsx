@@ -24,9 +24,9 @@ const nav = [
   { href: "/app", label: "Overview", icon: Home },
   { href: "/app/matches", label: "Opportunities", icon: Search },
   { href: "/app/tracker", label: "Pipeline", icon: Bookmark },
-  { href: "/app/resume", label: "Resume Studio", icon: PenTool },
-  { href: "/app/ats", label: "Health Check", icon: BarChart3 },
-  { href: "/app/cover-letter", label: "Letter Craft", icon: FileText },
+  { href: "/app/resume", label: "Resume Tailor", icon: PenTool },
+  { href: "/app/ats", label: "ATS Score", icon: BarChart3 },
+  { href: "/app/cover-letter", label: "Cover Letter", icon: FileText },
   { href: "/app/emails", label: "Outreach", icon: Mail },
   { href: "/app/networking", label: "Contacts", icon: Users },
   { href: "/app/interview", label: "AI Interviewer", icon: MessageSquare },
@@ -38,11 +38,11 @@ export function Sidebar() {
   const { data: session } = useSession();
 
   return (
-    <aside className="hidden lg:flex w-60 flex-col border-r border-border bg-surface h-screen sticky top-0">
-      <div className="p-5 border-b border-border">
+    <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-surface h-screen sticky top-0">
+      <div className="px-5 py-4 border-b border-border">
         <Logo size="sm" />
       </div>
-      <nav className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-0.5">
+      <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-4 space-y-0.5">
         {nav.map((item) => {
           const active =
             item.href === "/app"
@@ -53,7 +53,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                 active
                   ? "bg-accent-dim text-accent font-medium"
                   : "text-muted hover:text-foreground hover:bg-surface2"
@@ -65,16 +65,16 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="p-3 border-t border-border space-y-1">
+      <div className="p-3 border-t border-border space-y-0.5">
         {session?.user?.email && (
-          <p className="px-3 py-1 text-xs text-muted truncate">
+          <p className="px-3 py-2 text-xs text-muted truncate">
             {session.user.email}
           </p>
         )}
         <Link
           href="/app/settings"
           className={cn(
-            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+            "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
             pathname === "/app/settings"
               ? "bg-accent-dim text-accent font-medium"
               : "text-muted hover:text-foreground hover:bg-surface2"
@@ -85,10 +85,10 @@ export function Sidebar() {
         </Link>
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted hover:text-foreground hover:bg-surface2 transition-colors"
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted hover:text-foreground hover:bg-surface2 transition-colors"
         >
           <LogOut className="h-4 w-4" />
-          Sign Out
+          Sign out
         </button>
       </div>
     </aside>

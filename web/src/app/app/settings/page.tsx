@@ -1,6 +1,8 @@
 "use client";
 
+import { FormField } from "@/components/app/form-field";
 import { PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/page-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
@@ -12,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function SettingsPage() {
-  const { profile, settings, setSettings, setProfile } = useProfile();
+  const { profile, settings, setSettings, setProfile, loaded } = useProfile();
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [resumeFilename, setResumeFilename] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (!settings) return null;
+  if (!loaded || !settings) return <PageSkeleton />;
 
   return (
     <>
@@ -57,34 +59,28 @@ export default function SettingsPage() {
 
       <div className="space-y-6 max-w-2xl">
         <Card>
-          <h3 className="font-semibold mb-4">Profile</h3>
+          <h3 className="font-medium mb-4">Profile</h3>
           {profile && (
-            <div className="space-y-3 mb-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-muted">Name</label>
-                  <Input
-                    value={profile.fullName || ""}
-                    onChange={(e) =>
-                      setProfile({ ...profile, fullName: e.target.value })
-                    }
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted">Email</label>
-                  <Input
-                    value={profile.email || ""}
-                    onChange={(e) =>
-                      setProfile({ ...profile, email: e.target.value })
-                    }
-                    className="mt-1"
-                  />
-                </div>
-              </div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <FormField label="Name">
+                <Input
+                  value={profile.fullName || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, fullName: e.target.value })
+                  }
+                />
+              </FormField>
+              <FormField label="Email">
+                <Input
+                  value={profile.email || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, email: e.target.value })
+                  }
+                />
+              </FormField>
             </div>
           )}
-          <label className="flex items-center gap-3 cursor-pointer border border-dashed border-border rounded-xl p-4 hover:border-accent/50 transition-colors">
+          <label className="flex items-center gap-3 cursor-pointer border border-dashed border-border rounded-lg p-4 hover:border-accent/40 transition-colors">
             {uploading ? (
               <Loader2 className="h-5 w-5 text-accent animate-spin" />
             ) : (
@@ -109,21 +105,18 @@ export default function SettingsPage() {
         </Card>
 
         <Card>
-          <h3 className="font-semibold mb-4">Job Preferences</h3>
+          <h3 className="font-medium mb-4">Job preferences</h3>
           <div className="space-y-4">
-            <div>
-              <label className="text-xs text-muted">Target roles</label>
+            <FormField label="Target roles">
               <Input
                 value={settings.targetRoles}
                 onChange={(e) =>
                   setSettings({ ...settings, targetRoles: e.target.value })
                 }
                 placeholder="e.g. Software Engineer, Product Manager"
-                className="mt-1"
               />
-            </div>
-            <div>
-              <label className="text-xs text-muted">Preferred work mode</label>
+            </FormField>
+            <FormField label="Preferred work mode">
               <Select
                 value={settings.preferredWorkMode}
                 onChange={(e) =>
@@ -132,24 +125,21 @@ export default function SettingsPage() {
                     preferredWorkMode: e.target.value,
                   })
                 }
-                className="mt-1"
               >
                 <option value="remote">Remote</option>
                 <option value="hybrid">Hybrid</option>
                 <option value="onsite">On-site</option>
               </Select>
-            </div>
-            <div>
-              <label className="text-xs text-muted">Minimum salary</label>
+            </FormField>
+            <FormField label="Minimum salary">
               <Input
                 value={settings.minSalary}
                 onChange={(e) =>
                   setSettings({ ...settings, minSalary: e.target.value })
                 }
                 placeholder="e.g. $120,000"
-                className="mt-1"
               />
-            </div>
+            </FormField>
           </div>
         </Card>
 

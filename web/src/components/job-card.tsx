@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Storage } from "@/lib/storage";
 import type { JobListing } from "@/lib/types";
-import { Bookmark, ExternalLink, MapPin } from "lucide-react";
+import { Bookmark, ExternalLink, Loader2, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function JobCard({
@@ -15,24 +15,41 @@ export function JobCard({
 }: {
   job: JobListing;
   matchScore: number;
-  onTrack?: (job: JobListing) => void;
+  onTrack?: (job: JobListing) => void | Promise<void>;
 }) {
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [tracking, setTracking] = useState(false);
 
   useEffect(() => {
     Storage.getSavedMatches().then((matches) => setSaved(matches.includes(job.id)));
   }, [job.id]);
 
   const toggleSave = async () => {
-    const next = await Storage.toggleSavedMatch(job.id);
-    setSaved(next.includes(job.id));
+    setSaving(true);
+    try {
+      const next = await Storage.toggleSavedMatch(job.id);
+      setSaved(next.includes(job.id));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTrack = async () => {
+    if (!onTrack) return;
+    setTracking(true);
+    try {
+      await onTrack(job);
+    } finally {
+      setTracking(false);
+    }
   };
 
   return (
-    <Card className="flex flex-col gap-4 hover:border-accent/30">
+    <Card className="flex flex-col gap-4 hover:border-border transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-dim text-sm font-bold text-violet">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-violet-dim text-sm font-bold text-violet">
             {job.logo}
           </div>
           <div>
@@ -42,9 +59,14 @@ export function JobCard({
         </div>
         <button
           onClick={toggleSave}
-          className="rounded-lg p-2 text-muted hover:bg-surface2 hover:text-accent transition-colors"
+          disabled={saving}
+          className="rounded-md p-2 text-muted hover:bg-surface2 hover:text-accent transition-colors disabled:opacity-50"
         >
-          <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
+          )}
         </button>
       </div>
 
@@ -74,8 +96,16 @@ export function JobCard({
         <MatchScore score={matchScore} />
         <div className="flex gap-2">
           {onTrack && (
-            <Button size="sm" variant="outline" onClick={() => onTrack(job)}>
-              Add to Pipeline
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleTrack}
+              disabled={tracking}
+            >
+              {tracking ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              {tracking ? "Adding..." : "Add to pipeline"}
             </Button>
           )}
           <a href={job.url} target="_blank" rel="noopener noreferrer">

@@ -35,7 +35,7 @@ export const Storage = {
   },
 
   async getResumeFilename(): Promise<string | null> {
-    const data = await ApiClient.getUserData();
+    const data = await ApiClient.getResume();
     return data.resumeFilename;
   },
 
@@ -44,8 +44,12 @@ export const Storage = {
   },
 
   async getResumePdfBase64(): Promise<string | null> {
-    const data = await ApiClient.getUserData();
+    const data = await ApiClient.getResume();
     return data.resumePdfBase64;
+  },
+
+  async getResume() {
+    return ApiClient.getResume();
   },
 
   async setResumePdfBase64(base64: string) {

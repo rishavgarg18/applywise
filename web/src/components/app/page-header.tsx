@@ -8,14 +8,20 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        {description && (
-          <p className="mt-1 text-sm text-muted">{description}</p>
-        )}
+    <div className="mb-8 border-b border-border pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            {title}
+          </h1>
+          {description && (
+            <p className="mt-1.5 text-sm text-muted leading-relaxed max-w-2xl">
+              {description}
+            </p>
+          )}
+        </div>
+        {action}
       </div>
-      {action}
     </div>
   );
 }

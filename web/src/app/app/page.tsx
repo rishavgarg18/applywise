@@ -4,8 +4,8 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageSkeleton } from "@/components/app/page-skeleton";
 import { useProfile } from "@/hooks/use-profile";
-import { Storage } from "@/lib/storage";
 import { JOB_LISTINGS } from "@/lib/jobs-data";
 import { sortJobsByMatch } from "@/lib/match-score";
 import {
@@ -17,23 +17,21 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 export default function DashboardPage() {
-  const { profile, onboardingDone, loaded } = useProfile();
-  const [stats, setStats] = useState({ saved: 0, applied: 0, interview: 0 });
+  const { profile, onboardingDone, trackedJobs, loaded } = useProfile();
 
-  useEffect(() => {
-    Storage.getTrackedJobs().then((jobs) => {
-      setStats({
-        saved: jobs.filter((j) => j.status === "saved").length,
-        applied: jobs.filter((j) => j.status === "applied").length,
-        interview: jobs.filter((j) => j.status === "interview").length,
-      });
-    });
-  }, []);
+  const stats = useMemo(
+    () => ({
+      saved: trackedJobs.filter((j) => j.status === "saved").length,
+      applied: trackedJobs.filter((j) => j.status === "applied").length,
+      interview: trackedJobs.filter((j) => j.status === "interview").length,
+    }),
+    [trackedJobs]
+  );
 
-  if (!loaded) return null;
+  if (!loaded) return <PageSkeleton />;
 
   const topMatches = sortJobsByMatch(JOB_LISTINGS, profile).slice(0, 3);
   const name = profile?.fullName?.split(" ")[0] || "there";
@@ -71,13 +69,13 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {[
-          { href: "/app/matches", icon: Search, label: "Find Jobs", desc: "Browse matches" },
-          { href: "/app/resume", icon: PenTool, label: "Resume Studio", desc: "Tailor resume" },
-          { href: "/app/ats", icon: BarChart3, label: "Health Check", desc: "ATS analysis" },
-          { href: "/app/copilot", icon: Zap, label: "Extension", desc: "Autofill apps" },
+          { href: "/app/matches", icon: Search, label: "Opportunities", desc: "Browse matched roles" },
+          { href: "/app/resume", icon: PenTool, label: "Resume Tailor", desc: "Tailor for a role" },
+          { href: "/app/ats", icon: BarChart3, label: "ATS Score", desc: "Check resume fit" },
+          { href: "/app/copilot", icon: Zap, label: "Extension", desc: "Autofill applications" },
         ].map((item) => (
           <Link key={item.href} href={item.href}>
-            <Card className="hover:border-accent/30 cursor-pointer h-full">
+            <Card className="hover:border-border cursor-pointer h-full transition-colors">
               <item.icon className="h-5 w-5 text-accent mb-3" />
               <p className="font-medium">{item.label}</p>
               <p className="text-sm text-muted">{item.desc}</p>

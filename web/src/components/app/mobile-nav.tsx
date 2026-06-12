@@ -9,7 +9,7 @@ const nav = [
   { href: "/app", label: "Home", icon: Home },
   { href: "/app/matches", label: "Jobs", icon: Search },
   { href: "/app/tracker", label: "Pipeline", icon: Bookmark },
-  { href: "/app/resume", label: "Resume", icon: PenTool },
+  { href: "/app/resume", label: "Tailor", icon: PenTool },
   { href: "/app/settings", label: "Settings", icon: Settings },
 ];
 

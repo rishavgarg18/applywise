@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0d0f14;
-  --surface: #151820;
-  --surface2: #1c2030;
-  --border: #2a3044;
-  --text: #eef0f5;
-  --muted: #8b93a8;
-  --accent: #ff6b4a;
-  --accent-hover: #ff8266;
-  --accent-dim: rgba(255, 107, 74, 0.12);
-  --violet: #8b7cf6;
-  --violet-dim: rgba(139, 124, 246, 0.15);
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #f87171;
+  --bg: #0b1120;
+  --surface: #111827;
+  --surface2: #1f2937;
+  --border: #374151;
+  --text: #f3f4f6;
+  --muted: #9ca3af;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-dim: rgba(59, 130, 246, 0.12);
+  --violet: #6366f1;
+  --violet-dim: rgba(99, 102, 241, 0.12);
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
 }
 
 @theme inline {
@@ -65,13 +65,9 @@ body {
 .hero-glow {
   background: radial-gradient(
     ellipse 80% 50% at 50% -20%,
-    rgba(139, 124, 246, 0.25),
+    rgba(59, 130, 246, 0.15),
     transparent
   );
-}
-
-.card-glow:hover {
-  box-shadow: 0 0 40px rgba(255, 107, 74, 0.08);
 }
 
 @keyframes float {
