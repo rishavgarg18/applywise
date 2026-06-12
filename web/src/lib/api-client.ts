@@ -1,10 +1,11 @@
 import type {
+  ContactSuggestion,
   JobPreferences,
   Profile,
   Settings,
   TrackedJob,
+  UserDataBundle,
 } from "./types";
-import type { UserDataBundle } from "./types";
 
 async function request<T>(
   path: string,
@@ -58,5 +59,24 @@ export const ApiClient = {
 
   async clearUserData() {
     return request<{ success: boolean }>("/api/user", { method: "DELETE" });
+  },
+
+  async getContacts() {
+    const data = await request<{ contacts: ContactSuggestion[] }>("/api/contacts");
+    return data.contacts;
+  },
+
+  async saveContacts(contacts: Omit<ContactSuggestion, "id">[]) {
+    const data = await request<{ contacts: ContactSuggestion[] }>("/api/contacts", {
+      method: "POST",
+      body: JSON.stringify({ contacts }),
+    });
+    return data.contacts;
+  },
+
+  async deleteContact(id: string) {
+    return request<{ success: boolean }>(`/api/contacts/${id}`, {
+      method: "DELETE",
+    });
   },
 };

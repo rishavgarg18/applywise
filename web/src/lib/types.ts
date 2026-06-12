@@ -158,4 +158,5 @@ export interface ContactSuggestion {
   company: string;
   linkedinUrl: string;
   relevance: number;
+  location?: string;
 }

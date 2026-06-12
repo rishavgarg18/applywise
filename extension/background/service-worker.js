@@ -7,6 +7,7 @@ importScripts(
   '../lib/text-extract.js',
   '../lib/fallback.js',
   '../lib/linkedin.js',
+  '../lib/linkedin-import.js',
   '../lib/ai.js'
 );
 
@@ -92,6 +93,8 @@ async function handleMessage(message) {
     case 'CLEAR_ALL':
       await Storage.clearAll();
       return { success: true };
+    case 'IMPORT_LINKEDIN_PEOPLE':
+      return importLinkedInPeople(message.company || '', message.role || '');
     default:
       throw new Error(`Unknown message: ${message.type}`);
   }
