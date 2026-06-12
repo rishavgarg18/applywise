@@ -17,6 +17,7 @@ export async function GET() {
   };
 
   let database: string | Record<string, string> = "unknown";
+  let userWrite: string | Record<string, string> = "unknown";
   try {
     await prisma.$queryRaw`SELECT 1`;
     database = "ok";
@@ -27,15 +28,30 @@ export async function GET() {
         : { error: "failed" };
   }
 
+  try {
+    const testEmail = `health-check-${Date.now()}@applywise.internal`;
+    const user = await prisma.user.create({
+      data: { email: testEmail, name: "Health Check" },
+    });
+    await prisma.user.delete({ where: { id: user.id } });
+    userWrite = "ok";
+  } catch (err) {
+    userWrite =
+      err instanceof Error
+        ? { error: err.message, name: err.name }
+        : { error: "failed" };
+  }
+
   const ok =
     checks.AUTH_SECRET &&
     checks.GOOGLE_CLIENT_ID &&
     checks.GOOGLE_CLIENT_SECRET &&
     checks.DATABASE_URL &&
-    database === "ok";
+    database === "ok" &&
+    userWrite === "ok";
 
   return NextResponse.json(
-    { ok, checks, database },
+    { ok, checks, database, userWrite },
     { status: ok ? 200 : 503 }
   );
 }
