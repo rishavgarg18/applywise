@@ -1,4 +1,6 @@
 import type { Profile } from "./types";
+import { DEFAULT_PROFILE } from "./defaults";
+import { mergeProfiles, parseResumeText } from "./resume-parser";
 
 const GEMINI_MODELS = [
   "gemini-flash-latest",
@@ -118,6 +120,64 @@ export async function extractProfileFromText(resumeText: string): Promise<Profil
   const profile = parseJsonResponse(text);
   if (!profile) throw new Error("Could not parse profile JSON from Gemini");
   return profile as unknown as Profile;
+}
+
+function profileHasContent(profile: Partial<Profile>) {
+  return !!(
+    profile.fullName ||
+    profile.email ||
+    profile.summary ||
+    profile.primarySkills ||
+    profile.experiences?.length ||
+    profile.education?.length
+  );
+}
+
+/** Text-first extraction with local parser fallback — same strategy as the extension. */
+export async function extractProfile(options: {
+  resumeText?: string;
+  base64Pdf?: string;
+}): Promise<{ profile: Profile; warning?: string }> {
+  const local = options.resumeText ? parseResumeText(options.resumeText) : null;
+  let geminiProfile: Partial<Profile> | null = null;
+  let geminiError: Error | null = null;
+
+  if (options.resumeText) {
+    try {
+      geminiProfile = await extractProfileFromText(options.resumeText);
+    } catch (err) {
+      geminiError = err instanceof Error ? err : new Error("Gemini text failed");
+    }
+  }
+
+  if (!geminiProfile && options.base64Pdf) {
+    try {
+      geminiProfile = await extractProfileFromPdf(options.base64Pdf);
+    } catch (err) {
+      geminiError =
+        geminiError || (err instanceof Error ? err : new Error("Gemini PDF failed"));
+    }
+  }
+
+  if (geminiProfile) {
+    return {
+      profile: {
+        ...DEFAULT_PROFILE,
+        ...mergeProfiles(local, geminiProfile),
+      } as Profile,
+    };
+  }
+
+  if (local && profileHasContent(local)) {
+    return {
+      profile: { ...DEFAULT_PROFILE, ...local } as Profile,
+      warning: geminiError
+        ? "AI extraction failed — profile built from local PDF text parser."
+        : undefined,
+    };
+  }
+
+  throw geminiError || new Error("Could not extract profile from resume");
 }
 
 export async function generateCoverLetter(

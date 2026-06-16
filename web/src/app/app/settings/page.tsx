@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
 import { useProfile } from "@/hooks/use-profile";
 import { Storage } from "@/lib/storage";
-import { extractProfileFromPdf } from "@/lib/gemini";
+import { extractProfileFromResume } from "@/lib/gemini";
 import { Upload, Trash2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -30,7 +30,7 @@ export default function SettingsPage() {
       const base64 = btoa(
         new Uint8Array(buffer).reduce((d, b) => d + String.fromCharCode(b), "")
       );
-      const extracted = await extractProfileFromPdf(base64);
+      const { profile: extracted } = await extractProfileFromResume(file);
       await setProfile({ ...profile!, ...extracted });
       await Storage.setResumeFilename(file.name);
       await Storage.setResumePdfBase64(base64);

@@ -24,6 +24,13 @@ export async function POST(request: Request) {
     let result: unknown;
 
     switch (action) {
+      case "extractProfile": {
+        const out = await gemini.extractProfile({
+          resumeText: params.resumeText as string | undefined,
+          base64Pdf: params.base64Pdf as string | undefined,
+        });
+        return withCors(request, NextResponse.json(out));
+      }
       case "extractProfileFromPdf":
         result = await gemini.extractProfileFromPdf(params.base64Pdf as string);
         break;

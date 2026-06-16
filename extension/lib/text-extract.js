@@ -85,6 +85,32 @@ function parseExperiences(text) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+
+    const combined = line.match(
+      new RegExp(`^(.+?)\\s*[–—-]\\s*(.+?)\\s+${DATE_RANGE.source}`, 'i')
+    );
+    if (combined) {
+      const description = [];
+      for (let j = i + 1; j < lines.length; j++) {
+        const next = lines[j];
+        if (DATE_RANGE.test(next) && /[–—-]/.test(next)) break;
+        if (isSectionHeader(next)) break;
+        if (/^[•\-\*●]/.test(next)) {
+          description.push(next.replace(/^[•\-\*●]\s*/, ''));
+        }
+      }
+      experiences.push({
+        company: combined[2].trim(),
+        role: combined[1].trim(),
+        from: combined[3],
+        to: combined[4],
+        type: null,
+        location: null,
+        description: description.join(' ').trim() || null
+      });
+      continue;
+    }
+
     const roleDate = line.match(
       new RegExp(`^(.+?)\\s+${DATE_RANGE.source}$`, 'i')
     );
