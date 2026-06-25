@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { getRequestUser } from "@/lib/api-auth";
 import { corsHeaders, withCors } from "@/lib/cors";
+import {
+  API_ACTION_TO_METERED,
+  consume,
+  refund,
+  type MeteredAction,
+} from "@/lib/credits";
+import { rateLimit } from "@/lib/rate-limit";
 import * as gemini from "@/lib/gemini-server";
 import type { Profile } from "@/lib/types";
 
@@ -17,8 +24,45 @@ export async function POST(request: Request) {
     );
   }
 
+  const limit = rateLimit(`ai:${user.id}`);
+  if (!limit.allowed) {
+    const res = NextResponse.json(
+      { error: "Too many requests. Please slow down.", code: "RATE_LIMITED" },
+      { status: 429 }
+    );
+    res.headers.set("Retry-After", String(limit.retryAfter));
+    return withCors(request, res);
+  }
+
   const body = await request.json();
   const { action, ...params } = body;
+
+  // Reserve credits/free allowance for metered actions BEFORE doing the work.
+  // If the downstream AI call throws, we refund so users are never charged for
+  // failures.
+  const meteredAction: MeteredAction | undefined = API_ACTION_TO_METERED[action];
+  let consumed: { source: "free" | "credit" } | null = null;
+
+  if (meteredAction) {
+    const check = await consume(user.id, meteredAction);
+    if (!check.allowed) {
+      return withCors(
+        request,
+        NextResponse.json(
+          {
+            error: "You're out of free credits for today.",
+            code: "OUT_OF_CREDITS",
+            action: meteredAction,
+            dailyLimit: check.dailyLimit,
+            credits: check.credits,
+            resetAt: check.resetAt,
+          },
+          { status: 402 }
+        )
+      );
+    }
+    consumed = { source: check.source };
+  }
 
   try {
     let result: unknown;
@@ -109,6 +153,9 @@ export async function POST(request: Request) {
 
     return withCors(request, NextResponse.json({ result }));
   } catch (err) {
+    if (meteredAction && consumed) {
+      await refund(user.id, meteredAction, consumed.source).catch(() => {});
+    }
     const message = err instanceof Error ? err.message : "AI request failed";
     return withCors(request, NextResponse.json({ error: message }, { status: 500 }));
   }

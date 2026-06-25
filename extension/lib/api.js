@@ -34,7 +34,15 @@ const Api = {
     }
 
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Request failed');
+    if (!res.ok) {
+      const err = new Error(data.error || 'Request failed');
+      err.status = res.status;
+      if (data.code) err.code = data.code;
+      if (data.action) err.action = data.action;
+      if (data.resetAt) err.resetAt = data.resetAt;
+      if (typeof data.credits === 'number') err.credits = data.credits;
+      throw err;
+    }
     return data;
   },
 
@@ -57,6 +65,15 @@ const Api = {
     if (!res.ok) throw new Error(data.error || 'Sign-in failed');
     await this.setToken(data.apiToken);
     return data;
+  },
+
+  // Public runtime config (announcements, min version, pricing, feature flags).
+  // No auth required.
+  async getConfig() {
+    const baseUrl = (Config.API_BASE_URL || '').replace(/\/$/, '');
+    const res = await fetch(`${baseUrl}/api/config`);
+    if (!res.ok) throw new Error('Could not load config');
+    return res.json();
   },
 
   async getUserData() {

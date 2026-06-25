@@ -102,7 +102,8 @@ const Storage = {
       profile: data.profile ? { ...this.DEFAULT_PROFILE, ...data.profile } : null,
       settings: { ...this.DEFAULT_SETTINGS, ...(data.settings || {}) },
       onboardingDone: data.onboardingDone,
-      resumeFilename: data.resumeFilename
+      resumeFilename: data.resumeFilename,
+      usage: data.usage || null
     };
   },
 

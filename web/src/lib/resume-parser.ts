@@ -15,6 +15,12 @@ const DATE_END = new RegExp(
   "i"
 );
 
+function normalizeUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  const u = url.trim();
+  return u.startsWith("http") ? u : `https://${u}`;
+}
+
 function isSectionHeader(line: string) {
   return Object.values(SECTION_HEADERS).some((patterns) =>
     patterns.some((p) => p.test(line.trim()))
@@ -211,6 +217,12 @@ export function parseResumeText(resumeText: string): Partial<Profile> {
   const phone =
     text.match(/(?:\+?\d{1,3}[-.\s]?)?\d{5,}[\d\s-]{4,}/)?.[0]?.replace(/\s+/g, " ").trim() ||
     null;
+  const linkedin = normalizeUrl(
+    text.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+/i)?.[0]
+  );
+  const github = normalizeUrl(
+    text.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[\w-]+/i)?.[0]
+  );
 
   let fullName: string | null = null;
   for (const line of lines.slice(0, 8)) {
@@ -251,6 +263,8 @@ export function parseResumeText(resumeText: string): Partial<Profile> {
     fullName,
     email,
     phone,
+    linkedin,
+    github,
     city,
     state,
     country,

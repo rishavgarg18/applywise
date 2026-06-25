@@ -42,6 +42,8 @@
           <span>Drop PDF or click to upload</span>
         </label>
         <div id="extract-status" class="status hidden"></div>
+        <p class="hint or-divider">or</p>
+        <button class="btn secondary btn-sm" id="start-manual" type="button">Build my profile manually</button>
       </div>
       <div class="step hidden" data-step="2">
         <h2>Step 2 — Review</h2>
@@ -65,6 +67,8 @@
       </div>
     </header>
 
+    <div id="app-announcement" class="announcement hidden"></div>
+
     <nav class="sidebar">
       <button class="nav-item active" data-tab="home">Home</button>
       <button class="nav-item" data-tab="linkedin">LinkedIn</button>
@@ -80,6 +84,8 @@
             <p id="preview-role">—</p>
             <p id="preview-company" class="muted">—</p>
           </div>
+
+          <div class="credits-bar" id="credits-bar"></div>
 
           <div class="job-context-card" id="job-context-card">
             <div class="section-header">
@@ -126,8 +132,9 @@
 
       <section id="tab-profile" class="tab hidden">
         <div class="tab-scroll">
+          <p class="hint">Edit any field, add or remove entries, then save. Use this to fix anything the parser missed.</p>
           <form id="profile-form" class="edit-form"></form>
-          <button class="btn secondary" id="save-profile">Save Profile</button>
+          <button class="btn primary" id="save-profile">Save Profile</button>
         </div>
       </section>
 

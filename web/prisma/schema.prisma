@@ -13,6 +13,7 @@ model User {
   name          String?
   image         String?
   emailVerified DateTime?
+  credits       Int       @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -21,6 +22,8 @@ model User {
   userData     UserData?
   apiTokens    ApiToken[]
   contacts     SavedContact[]
+  dailyUsage   DailyUsage[]
+  payments     Payment[]
 }
 
 model Account {
@@ -100,6 +103,40 @@ model ApiToken {
   expiresAt DateTime?
   createdAt DateTime  @default(now())
   lastUsedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// One row per user / day / metered action. `date` is the IST calendar day
+// (YYYY-MM-DD) so the free allowance resets at local midnight.
+model DailyUsage {
+  id     String @id @default(cuid())
+  userId String
+  date   String
+  action String
+  count  Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, action])
+  @@index([userId])
+}
+
+// Razorpay credit purchases. `razorpayPaymentId` is the idempotency key for
+// webhook-driven credit grants.
+model Payment {
+  id                String   @id @default(cuid())
+  userId            String
+  razorpayOrderId   String   @unique
+  razorpayPaymentId String?  @unique
+  packId            String
+  amount            Int
+  credits           Int
+  status            String   @default("created")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

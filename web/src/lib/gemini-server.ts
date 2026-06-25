@@ -36,6 +36,38 @@ function getApiKey() {
   return key;
 }
 
+/**
+ * Best-effort recovery for JSON that was cut off mid-output (token limit) or
+ * has trailing commas. Closes any still-open strings/objects/arrays so a long
+ * resume that truncates doesn't fail extraction entirely.
+ */
+function repairTruncatedJson(input: string): string {
+  let inString = false;
+  let escaped = false;
+  const stack: string[] = [];
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{") stack.push("}");
+    else if (ch === "[") stack.push("]");
+    else if (ch === "}" || ch === "]") stack.pop();
+  }
+
+  let repaired = input;
+  if (inString) repaired += '"';
+  // Drop a dangling key/comma so the closing braces produce valid JSON.
+  repaired = repaired.replace(/,\s*$/, "").replace(/:\s*$/, ": null");
+  while (stack.length) repaired += stack.pop();
+  return repaired;
+}
+
 function parseJsonResponse(text: string): Record<string, unknown> | null {
   const cleaned = text
     .replace(/```json\s*/gi, "")
@@ -43,11 +75,22 @@ function parseJsonResponse(text: string): Record<string, unknown> | null {
     .trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
-  if (start === -1 || end === -1) return null;
+  if (start === -1) return null;
+
+  const candidate =
+    end > start ? cleaned.slice(start, end + 1) : cleaned.slice(start);
+
+  // Remove trailing commas before } or ] which Gemini occasionally emits.
+  const noTrailingCommas = candidate.replace(/,(\s*[}\]])/g, "$1");
+
   try {
-    return JSON.parse(cleaned.slice(start, end + 1));
+    return JSON.parse(noTrailingCommas);
   } catch {
-    return null;
+    try {
+      return JSON.parse(repairTruncatedJson(noTrailingCommas));
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -55,11 +98,26 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+type GenerationConfig = {
+  temperature?: number;
+  maxOutputTokens?: number;
+  responseMimeType?: string;
+};
+
+// Forces the model to emit a single raw JSON object (no markdown/prose), with
+// enough output room for long resumes and deterministic, repeatable parsing.
+const JSON_GENERATION_CONFIG: GenerationConfig = {
+  temperature: 0,
+  maxOutputTokens: 8192,
+  responseMimeType: "application/json",
+};
+
 async function callGemini(
   parts: {
     text?: string;
     inline_data?: { mime_type: string; data: string };
-  }[]
+  }[],
+  generationConfig?: GenerationConfig
 ) {
   const apiKey = getApiKey();
   let lastError: Error & { status?: number } | null = null;
@@ -74,7 +132,10 @@ async function callGemini(
           "Content-Type": "application/json",
           "X-goog-api-key": apiKey,
         },
-        body: JSON.stringify({ contents: [{ parts }] }),
+        body: JSON.stringify({
+          contents: [{ parts }],
+          ...(generationConfig ? { generationConfig } : {}),
+        }),
       });
 
       if (res.ok) {
@@ -104,19 +165,23 @@ async function callGemini(
 }
 
 export async function extractProfileFromPdf(base64Pdf: string): Promise<Profile> {
-  const text = await callGemini([
-    { inline_data: { mime_type: "application/pdf", data: base64Pdf } },
-    { text: EXTRACTION_PROMPT },
-  ]);
+  const text = await callGemini(
+    [
+      { inline_data: { mime_type: "application/pdf", data: base64Pdf } },
+      { text: EXTRACTION_PROMPT },
+    ],
+    JSON_GENERATION_CONFIG
+  );
   const profile = parseJsonResponse(text);
   if (!profile) throw new Error("Could not parse profile JSON from Gemini");
   return profile as unknown as Profile;
 }
 
 export async function extractProfileFromText(resumeText: string): Promise<Profile> {
-  const text = await callGemini([
-    { text: `${EXTRACTION_PROMPT}\n\nResume text:\n${resumeText.slice(0, 12000)}` },
-  ]);
+  const text = await callGemini(
+    [{ text: `${EXTRACTION_PROMPT}\n\nResume text:\n${resumeText.slice(0, 20000)}` }],
+    JSON_GENERATION_CONFIG
+  );
   const profile = parseJsonResponse(text);
   if (!profile) throw new Error("Could not parse profile JSON from Gemini");
   return profile as unknown as Profile;
@@ -133,7 +198,16 @@ function profileHasContent(profile: Partial<Profile>) {
   );
 }
 
-/** Text-first extraction with local parser fallback — same strategy as the extension. */
+/**
+ * Resume extraction with layered fallbacks for reliability.
+ *
+ * Gemini reads PDFs natively and understands multi-column / complex layouts far
+ * better than the flattened text we extract client-side (where columns get
+ * interleaved). So when we have the raw PDF we use it as the primary source and
+ * fall back to the extracted text, then to the local regex parser. Regex-only
+ * fields from the text (email, phone, links) are merged on top since those are
+ * reliable even when the layout confuses the model.
+ */
 export async function extractProfile(options: {
   resumeText?: string;
   base64Pdf?: string;
@@ -142,28 +216,30 @@ export async function extractProfile(options: {
   let geminiProfile: Partial<Profile> | null = null;
   let geminiError: Error | null = null;
 
-  if (options.resumeText) {
-    try {
-      geminiProfile = await extractProfileFromText(options.resumeText);
-    } catch (err) {
-      geminiError = err instanceof Error ? err : new Error("Gemini text failed");
-    }
-  }
-
-  if (!geminiProfile && options.base64Pdf) {
+  if (options.base64Pdf) {
     try {
       geminiProfile = await extractProfileFromPdf(options.base64Pdf);
     } catch (err) {
-      geminiError =
-        geminiError || (err instanceof Error ? err : new Error("Gemini PDF failed"));
+      geminiError = err instanceof Error ? err : new Error("Gemini PDF failed");
     }
   }
 
-  if (geminiProfile) {
+  if (!profileHasContent(geminiProfile || {}) && options.resumeText) {
+    try {
+      const fromText = await extractProfileFromText(options.resumeText);
+      // Prefer whichever extraction has more content; merge to fill gaps.
+      geminiProfile = mergeProfiles(geminiProfile, fromText);
+    } catch (err) {
+      geminiError =
+        geminiError || (err instanceof Error ? err : new Error("Gemini text failed"));
+    }
+  }
+
+  if (geminiProfile && profileHasContent(geminiProfile)) {
     return {
       profile: {
         ...DEFAULT_PROFILE,
-        ...mergeProfiles(local, geminiProfile),
+        ...mergeProfiles(geminiProfile, contactFieldsOnly(local)),
       } as Profile,
     };
   }
@@ -178,6 +254,29 @@ export async function extractProfile(options: {
   }
 
   throw geminiError || new Error("Could not extract profile from resume");
+}
+
+/**
+ * Regex-extracted contact fields from raw text are highly reliable; use them to
+ * backfill anything the model missed without overwriting richer model output.
+ */
+function contactFieldsOnly(
+  local: Partial<Profile> | null
+): Partial<Profile> | null {
+  if (!local) return null;
+  const keys: (keyof Profile)[] = [
+    "email",
+    "phone",
+    "linkedin",
+    "github",
+    "portfolio",
+  ];
+  const out: Partial<Profile> = {};
+  for (const key of keys) {
+    const val = local[key];
+    if (val) (out as Record<string, unknown>)[key] = val;
+  }
+  return out;
 }
 
 export async function generateCoverLetter(
@@ -269,7 +368,7 @@ export async function analyzeATS(
 Resume: ${JSON.stringify(profile).slice(0, 8000)}
 Job Description: ${jobDescription.slice(0, 4000)}`;
 
-  const text = await callGemini([{ text: prompt }]);
+  const text = await callGemini([{ text: prompt }], JSON_GENERATION_CONFIG);
   const result = parseJsonResponse(text);
   if (!result) {
     return {
@@ -318,7 +417,7 @@ Role: ${jobTitle} at ${company}
 Candidate: ${profile.fullName}, ${profile.currentDesignation}
 Skills: ${profile.primarySkills}`;
 
-  const text = await callGemini([{ text: prompt }]);
+  const text = await callGemini([{ text: prompt }], JSON_GENERATION_CONFIG);
   const result = parseJsonResponse(text);
   return (
     (result as { question: string; tip: string }) || {
@@ -368,7 +467,7 @@ Rules:
 - Empty string if no match
 - No markdown`;
 
-  const text = await callGemini([{ text: prompt }]);
+  const text = await callGemini([{ text: prompt }], JSON_GENERATION_CONFIG);
   const result = parseJsonResponse(text);
   return (result as Record<string, string>) || {};
 }

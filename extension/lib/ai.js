@@ -3,22 +3,17 @@ async function extractProfile({ base64, resumeText }) {
   let geminiProfile = null;
   let geminiError = null;
 
-  if (resumeText) {
-    try {
-      const res = await Api.ai('extractProfileFromText', { resumeText });
-      geminiProfile = res.result;
-    } catch (err) {
-      geminiError = err;
-    }
-  }
-
-  if (!geminiProfile && base64) {
-    try {
-      const res = await Api.ai('extractProfileFromPdf', { base64Pdf: base64 });
-      geminiProfile = res.result;
-    } catch (err) {
-      geminiError = geminiError || err;
-    }
+  // Single combined call — the server decides the best source (native PDF
+  // parsing preferred, extracted text as fallback) and returns a merged
+  // profile. This avoids the client guessing which path is most accurate.
+  try {
+    const res = await Api.ai('extractProfile', { resumeText, base64Pdf: base64 });
+    geminiProfile = res.profile || null;
+  } catch (err) {
+    // Out of credits is a hard stop — surface it instead of silently using the
+    // local parser, so the user sees the buy-credits prompt.
+    if (err?.code === 'OUT_OF_CREDITS' || err?.status === 402) throw err;
+    geminiError = err;
   }
 
   if (geminiProfile) {

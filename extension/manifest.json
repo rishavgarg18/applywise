@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Applywise",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Upload your resume once. AI autofills every job application form.",
   "permissions": ["storage", "activeTab", "scripting", "identity"],
   "host_permissions": [
@@ -26,7 +26,6 @@
     {
       "matches": [
         "https://applywise-drab.vercel.app/*",
-        "https://*.vercel.app/*",
         "http://localhost:3000/*"
       ],
       "js": ["content/bridge.js"],
@@ -36,7 +35,6 @@
   "externally_connectable": {
     "matches": [
       "https://applywise-drab.vercel.app/*",
-      "https://*.vercel.app/*",
       "http://localhost:3000/*"
     ]
   },

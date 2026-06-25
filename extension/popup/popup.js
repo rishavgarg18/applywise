@@ -4,6 +4,65 @@ let currentJobContext = null;
 let lastKnownJobContext = null;
 let currentCoverLetter = '';
 let linkedInPeople = [];
+let currentUsage = null;
+
+function isOutOfCredits(err) {
+  return err?.code === 'OUT_OF_CREDITS' || /out of (free )?credits/i.test(err?.message || '');
+}
+
+async function refreshCredits() {
+  try {
+    const res = await sendMessage({ type: 'GET_CREDITS' });
+    if (res?.success && res.usage) {
+      currentUsage = res.usage;
+      renderCredits();
+    }
+  } catch {
+    /* ignore — credits are non-critical for the rest of the UI */
+  }
+}
+
+function renderCredits() {
+  const bar = document.getElementById('credits-bar');
+  if (!bar || !currentUsage) return;
+  const actions = currentUsage.actions || {};
+  const chips = Object.keys(actions)
+    .map((key) => {
+      const a = actions[key];
+      const short = (a.label || key).split(' ')[0];
+      const low = a.freeRemaining === 0;
+      return `<span class="credit-chip${low ? ' low' : ''}">${esc(short)} ${a.freeRemaining}/${a.dailyFree}</span>`;
+    })
+    .join('');
+  const buyBtn = paymentsEnabled()
+    ? '<button class="btn-text" id="buy-credits" type="button">Buy</button>'
+    : '';
+  bar.innerHTML = `
+    <div class="credits-row">
+      <span class="credits-balance">⚡ ${currentUsage.credits} credits</span>
+      ${buyBtn}
+    </div>
+    <div class="credit-chips">${chips}</div>
+  `;
+  bar.querySelector('#buy-credits')?.addEventListener('click', openBuyPage);
+}
+
+async function openBuyPage() {
+  await sendMessage({ type: 'OPEN_BUY_PAGE' });
+}
+
+// Renders an out-of-credits message with a Buy button into a status element.
+function showOutOfCredits(statusEl, err) {
+  const label = err?.action ? `${err.action.replace(/([A-Z])/g, ' $1').toLowerCase()}` : 'this';
+  statusEl.classList.remove('hidden');
+  statusEl.className = 'status error';
+  const cta = paymentsEnabled()
+    ? ' <button class="btn-text" data-buy-credits type="button">Buy credits</button>'
+    : ' Come back tomorrow when your free limit resets.';
+  statusEl.innerHTML = `Out of free credits for ${esc(label)} today.${cta}`;
+  statusEl.querySelector('[data-buy-credits]')?.addEventListener('click', openBuyPage);
+  refreshCredits();
+}
 
 function isUsefulJobContext(ctx) {
   if (!ctx) return false;
@@ -62,7 +121,73 @@ const PROFILE_FIELDS = [
   { key: 'currentAddress', label: 'Current Address', textarea: true }
 ];
 
+// Repeatable resume sections. Each becomes an add/edit/delete editor in the
+// Profile tab so a mis-parsed resume can be fixed or built from scratch.
+const SECTION_SCHEMAS = [
+  {
+    key: 'experiences',
+    title: 'Experience',
+    singular: 'Experience',
+    fields: [
+      { key: 'role', label: 'Role' },
+      { key: 'company', label: 'Company' },
+      { key: 'from', label: 'From' },
+      { key: 'to', label: 'To' },
+      { key: 'type', label: 'Type' },
+      { key: 'location', label: 'Location' },
+      { key: 'description', label: 'Description', textarea: true }
+    ]
+  },
+  {
+    key: 'education',
+    title: 'Education',
+    singular: 'Education',
+    fields: [
+      { key: 'degree', label: 'Degree' },
+      { key: 'institution', label: 'Institution' },
+      { key: 'from', label: 'From' },
+      { key: 'to', label: 'To' },
+      { key: 'percentage', label: 'Score / %' },
+      { key: 'stream', label: 'Stream' }
+    ]
+  },
+  {
+    key: 'projects',
+    title: 'Projects',
+    singular: 'Project',
+    fields: [
+      { key: 'name', label: 'Name' },
+      { key: 'techStack', label: 'Tech Stack' },
+      { key: 'description', label: 'Description', textarea: true },
+      { key: 'url', label: 'URL' },
+      { key: 'duration', label: 'Duration' }
+    ]
+  },
+  {
+    key: 'certifications',
+    title: 'Certifications',
+    singular: 'Certification',
+    fields: [
+      { key: 'name', label: 'Name' },
+      { key: 'issuer', label: 'Issuer' },
+      { key: 'date', label: 'Date' },
+      { key: 'expiry', label: 'Expiry' },
+      { key: 'id', label: 'Credential ID' },
+      { key: 'url', label: 'URL' }
+    ]
+  }
+];
+
+function emptySectionItem(schema) {
+  const item = {};
+  schema.fields.forEach((f) => { item[f.key] = null; });
+  return item;
+}
+
+let serverConfig = null;
+
 async function init() {
+  loadServerConfig();
   const auth = await sendMessage({ type: 'GET_AUTH' });
 
   if (!auth.user) {
@@ -74,6 +199,44 @@ async function init() {
   renderAccount(auth.user);
   await continueAfterAuth();
   bindEvents();
+}
+
+function versionLessThan(a, b) {
+  const pa = String(a).split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    if ((pa[i] || 0) < (pb[i] || 0)) return true;
+    if ((pa[i] || 0) > (pb[i] || 0)) return false;
+  }
+  return false;
+}
+
+// Fetches server-driven config so announcements, the minimum supported version,
+// and feature kill switches can change without shipping a new extension build.
+async function loadServerConfig() {
+  try {
+    serverConfig = await Api.getConfig();
+  } catch {
+    return;
+  }
+
+  const el = document.getElementById('app-announcement');
+  if (!el) return;
+
+  const currentVersion = chrome.runtime.getManifest().version;
+  if (serverConfig.minVersion && versionLessThan(currentVersion, serverConfig.minVersion)) {
+    el.textContent = 'A newer version of Applywise is required. Please update from the Chrome Web Store.';
+    el.className = 'announcement warn';
+  } else if (serverConfig.announcement) {
+    el.textContent = serverConfig.announcement;
+    el.className = 'announcement';
+  } else {
+    el.className = 'announcement hidden';
+  }
+}
+
+function paymentsEnabled() {
+  return !serverConfig || serverConfig.featureFlags?.payments !== false;
 }
 
 async function continueAfterAuth() {
@@ -156,6 +319,11 @@ function showApp(store) {
   document.getElementById('onboarding').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   currentProfile = { ...Storage.DEFAULT_PROFILE, ...store.profile };
+  if (store.usage) {
+    currentUsage = store.usage;
+    renderCredits();
+  }
+  refreshCredits();
   renderHome();
   renderProfileForm();
   loadJobPageContext();
@@ -193,6 +361,8 @@ function bindEvents() {
   });
 
   document.getElementById('save-profile').addEventListener('click', saveProfileFromForm);
+  document.getElementById('profile-form').addEventListener('click', handleProfileFormClick);
+  document.getElementById('start-manual')?.addEventListener('click', startManualProfile);
   document.getElementById('save-settings').addEventListener('click', saveSettings);
   document.getElementById('clear-data').addEventListener('click', clearAllData);
   document.getElementById('refresh-job').addEventListener('click', loadJobPageContext);
@@ -211,6 +381,19 @@ function bindEvents() {
     const file = e.dataTransfer.files[0];
     if (file) processPdfFile(file, 'extract-status');
   });
+
+  // Refresh credit balance when the popup regains focus (e.g. after the user
+  // completes a purchase in the web tab).
+  window.addEventListener('focus', refreshCredits);
+}
+
+async function startManualProfile() {
+  currentProfile = { ...Storage.DEFAULT_PROFILE };
+  await sendMessage({ type: 'SAVE_PROFILE', profile: currentProfile });
+  await sendMessage({ type: 'SET_ONBOARDING_DONE' });
+  const data = await sendMessage({ type: 'GET_DATA' });
+  showApp(data.data);
+  switchTab('profile');
 }
 
 async function handleResumeUpload(e) {
@@ -264,12 +447,17 @@ async function processPdfFile(file, statusId, stayOnApp = false) {
   const result = await sendMessage({ type: 'EXTRACT_PDF', base64, resumeText, filename: file.name });
 
   if (!result.success) {
+    if (isOutOfCredits(result)) {
+      showOutOfCredits(statusEl, result);
+      throw new Error(result.error);
+    }
     statusEl.textContent = result.error || 'Extraction failed';
     statusEl.className = 'status error';
     throw new Error(result.error);
   }
 
   currentProfile = { ...Storage.DEFAULT_PROFILE, ...result.profile };
+  refreshCredits();
   statusEl.textContent = result.warning || 'Profile extracted!';
   statusEl.className = result.warning ? 'status' : 'status success';
 
@@ -469,12 +657,22 @@ async function generateCoverLetterForPage() {
       jobContext: currentJobContext || {}
     });
 
-    if (!result.success) throw new Error(result.error);
+    if (!result.success) {
+      if (isOutOfCredits(result)) {
+        coverEl.innerHTML = `Out of free cover letters today. <button class="btn-text" data-buy-credits type="button">Buy credits</button>`;
+        coverEl.className = 'cover-letter-body muted';
+        coverEl.querySelector('[data-buy-credits]')?.addEventListener('click', openBuyPage);
+        refreshCredits();
+        return;
+      }
+      throw new Error(result.error);
+    }
 
     currentCoverLetter = result.letter || '';
     coverEl.textContent = currentCoverLetter;
     coverEl.className = 'cover-letter-body';
     coverEl.title = 'Generated by Gemini';
+    refreshCredits();
   } catch (err) {
     coverEl.textContent = formatGeminiError(err);
     coverEl.className = 'cover-letter-body muted';
@@ -511,51 +709,128 @@ function renderProfileForm() {
     return `<div class="field-group"><label>${f.label}</label><input type="${f.type || 'text'}" name="${f.key}" value="${escAttr(val)}"></div>`;
   }).join('');
 
-  const experiencesHtml = (p.experiences || []).map((exp) => `
-    <div class="section-card">
-      <h4>${esc(exp.role || 'Role')} @ ${esc(exp.company || 'Company')}</h4>
-      <p class="muted">${esc(exp.from || '')} – ${esc(exp.to || '')} · ${esc(exp.location || '')}</p>
-      <p>${esc(exp.description || '')}</p>
-    </div>
-  `).join('') || '<p class="muted">No experience entries</p>';
+  const sectionsHtml = SECTION_SCHEMAS.map(renderSectionEditor).join('');
 
-  const educationHtml = (p.education || []).map((edu) => `
-    <div class="section-card">
-      <h4>${esc(edu.degree || 'Degree')}</h4>
-      <p class="muted">${esc(edu.institution || '')} · ${esc(edu.from || '')} – ${esc(edu.to || '')}</p>
-      <p>${esc(edu.percentage || '')} ${edu.stream ? `· ${esc(edu.stream)}` : ''}</p>
-    </div>
-  `).join('') || '<p class="muted">No education entries</p>';
-
-  const projectsHtml = (p.projects || []).map((proj) => `
-    <div class="section-card">
-      <h4>${esc(proj.name || 'Project')}</h4>
-      <p class="muted">${esc(proj.techStack || '')}</p>
-      <p>${esc(proj.description || '')}</p>
-    </div>
-  `).join('') || '<p class="muted">No projects</p>';
+  const achievementsVal = (p.achievements || []).join('\n');
+  const achievementsHtml = `
+    <div class="form-section">
+      <h3 class="form-section-title">Achievements</h3>
+      <div class="field-group">
+        <label>One per line</label>
+        <textarea name="achievements" placeholder="Won national hackathon 2024&#10;Published research paper">${esc(achievementsVal)}</textarea>
+      </div>
+    </div>`;
 
   form.innerHTML = `
     <h3 class="form-section-title">Basic Info</h3>
     ${fieldsHtml}
-    <h3 class="form-section-title">Experience</h3>
-    ${experiencesHtml}
-    <h3 class="form-section-title">Education</h3>
-    ${educationHtml}
-    <h3 class="form-section-title">Projects</h3>
-    ${projectsHtml}
+    ${sectionsHtml}
+    ${achievementsHtml}
   `;
 }
 
-async function saveProfileFromForm() {
+function renderSectionItem(schema, item, index) {
+  const inputs = schema.fields.map((f) => {
+    const val = item?.[f.key] ?? '';
+    const name = `${schema.key}.${index}.${f.key}`;
+    if (f.textarea) {
+      return `<div class="field-group"><label>${f.label}</label><textarea name="${name}">${esc(val)}</textarea></div>`;
+    }
+    return `<div class="field-group"><label>${f.label}</label><input type="text" name="${name}" value="${escAttr(val)}"></div>`;
+  }).join('');
+
+  return `
+    <div class="section-card editable" data-section="${schema.key}" data-index="${index}">
+      <div class="section-card-head">
+        <span class="section-card-title">${esc(schema.singular)} ${index + 1}</span>
+        <button type="button" class="btn-text danger-text" data-remove="${schema.key}" data-index="${index}">Remove</button>
+      </div>
+      ${inputs}
+    </div>`;
+}
+
+function renderSectionEditor(schema) {
+  const items = currentProfile[schema.key] || [];
+  const itemsHtml = items.length
+    ? items.map((item, i) => renderSectionItem(schema, item, i)).join('')
+    : `<p class="muted">No ${schema.title.toLowerCase()} added yet.</p>`;
+
+  return `
+    <div class="form-section" data-section-block="${schema.key}">
+      <div class="form-section-head">
+        <h3 class="form-section-title">${esc(schema.title)}</h3>
+        <button type="button" class="btn-text add-text" data-add="${schema.key}">+ Add</button>
+      </div>
+      <div class="section-items" data-items="${schema.key}">${itemsHtml}</div>
+    </div>`;
+}
+
+// Read every input in the form back into currentProfile. Called before any
+// re-render (add/remove) so in-progress edits are never lost, and on save.
+function syncFormToProfile() {
   const form = document.getElementById('profile-form');
+  if (!form) return;
+
   PROFILE_FIELDS.forEach((f) => {
     const input = form.querySelector(`[name="${f.key}"]`);
-    if (input) currentProfile[f.key] = input.value || null;
+    if (input) currentProfile[f.key] = input.value.trim() || null;
   });
-  await sendMessage({ type: 'SAVE_PROFILE', profile: currentProfile });
-  renderHome();
-  showBriefStatus('Profile saved!');
+
+  SECTION_SCHEMAS.forEach((schema) => {
+    const items = currentProfile[schema.key] || [];
+    items.forEach((item, i) => {
+      schema.fields.forEach((f) => {
+        const input = form.querySelector(`[name="${schema.key}.${i}.${f.key}"]`);
+        if (input) item[f.key] = input.value.trim() || null;
+      });
+    });
+  });
+
+  const achInput = form.querySelector('[name="achievements"]');
+  if (achInput) {
+    currentProfile.achievements = achInput.value
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+  }
+}
+
+function handleProfileFormClick(e) {
+  const addKey = e.target.dataset.add;
+  const removeKey = e.target.dataset.remove;
+  if (!addKey && !removeKey) return;
+
+  e.preventDefault();
+  syncFormToProfile();
+
+  if (addKey) {
+    const schema = SECTION_SCHEMAS.find((s) => s.key === addKey);
+    if (!currentProfile[addKey]) currentProfile[addKey] = [];
+    currentProfile[addKey].push(emptySectionItem(schema));
+  } else if (removeKey) {
+    const index = parseInt(e.target.dataset.index, 10);
+    if (Array.isArray(currentProfile[removeKey])) {
+      currentProfile[removeKey].splice(index, 1);
+    }
+  }
+
+  renderProfileForm();
+}
+
+async function saveProfileFromForm() {
+  syncFormToProfile();
+  const btn = document.getElementById('save-profile');
+  if (btn) btn.disabled = true;
+  try {
+    await sendMessage({ type: 'SAVE_PROFILE', profile: currentProfile });
+    renderHome();
+    renderReviewPreview();
+    showBriefStatus('Profile saved!');
+  } catch (err) {
+    showBriefStatus(err.message || 'Could not save profile');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function saveSettings() {
@@ -768,9 +1043,17 @@ async function handleLinkedInAction(person, action, btn) {
       person: { name: person.name, title: person.title }
     });
 
-    if (!result.success) throw new Error(result.error);
+    if (!result.success) {
+      if (isOutOfCredits(result)) {
+        showBriefStatus('Out of free referral messages today — tap Buy in the header.');
+        refreshCredits();
+        return;
+      }
+      throw new Error(result.error);
+    }
 
     const note = result.message || '';
+    refreshCredits();
     await navigator.clipboard.writeText(note);
     await chrome.tabs.create({ url: person.profileUrl });
 

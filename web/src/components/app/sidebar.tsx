@@ -5,6 +5,7 @@ import { cn } from "@/lib/cn";
 import {
   BarChart3,
   Bookmark,
+  Coins,
   FileText,
   Home,
   LogOut,
@@ -31,6 +32,7 @@ const nav = [
   { href: "/app/networking", label: "Contacts", icon: Users },
   { href: "/app/interview", label: "AI Interviewer", icon: MessageSquare },
   { href: "/app/copilot", label: "Extension", icon: Zap },
+  { href: "/app/credits", label: "Credits", icon: Coins },
 ];
 
 export function Sidebar() {

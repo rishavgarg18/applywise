@@ -683,3 +683,129 @@ textarea {
   color: var(--accent);
   margin-left: 6px;
 }
+
+.announcement {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.announcement.warn {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
+
+/* Credits */
+.credits-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.credits-bar:empty {
+  display: none;
+}
+
+.credits-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.credits-balance {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.credit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.credit-chip {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.credit-chip.low {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.status [data-buy-credits],
+.cover-letter-body [data-buy-credits] {
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.or-divider {
+  text-align: center;
+  margin: 12px 0 8px;
+}
+
+/* Editable resume sections */
+.form-section {
+  margin-top: 18px;
+}
+
+.form-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-section-head .form-section-title {
+  margin: 0;
+}
+
+.add-text {
+  font-weight: 600;
+}
+
+.danger-text {
+  color: var(--danger);
+}
+
+.section-card.editable {
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.section-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-card-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.section-card.editable .field-group {
+  margin-bottom: 8px;
+}
+
+.section-card.editable label {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 3px;
+  font-weight: 600;
+}

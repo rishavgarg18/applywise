@@ -140,6 +140,8 @@ export interface JobList {
   jobIds: string[];
 }
 
+import type { UsageSnapshot } from "./credits";
+
 export type UserDataBundle = {
   profile: Profile | null;
   settings: Settings;
@@ -149,6 +151,7 @@ export type UserDataBundle = {
   resumeFilename: string | null;
   resumePdfBase64: string | null;
   onboardingDone: boolean;
+  usage: UsageSnapshot;
 };
 
 export interface ContactSuggestion {

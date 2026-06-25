@@ -17,7 +17,14 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   handleMessage(message).then(sendResponse).catch((err) => {
-    sendResponse({ success: false, error: err.message });
+    sendResponse({
+      success: false,
+      error: err.message,
+      code: err.code,
+      action: err.action,
+      resetAt: err.resetAt,
+      credits: err.credits
+    });
   });
   return true;
 });
@@ -95,6 +102,15 @@ async function handleMessage(message) {
       return { success: true };
     case 'IMPORT_LINKEDIN_PEOPLE':
       return importLinkedInPeople(message.company || '', message.role || '');
+    case 'GET_CREDITS': {
+      const data = await Api.getUserData();
+      return { success: true, usage: data.usage || null };
+    }
+    case 'OPEN_BUY_PAGE': {
+      const base = (Config.API_BASE_URL || '').replace(/\/$/, '');
+      await chrome.tabs.create({ url: `${base}/app/credits` });
+      return { success: true };
+    }
     default:
       throw new Error(`Unknown message: ${message.type}`);
   }

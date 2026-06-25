@@ -5,6 +5,7 @@ import {
   DEFAULT_PROFILE,
   DEFAULT_SETTINGS,
 } from "@/lib/defaults";
+import { getUsageSnapshot } from "@/lib/credits";
 import type {
   JobPreferences,
   Profile,
@@ -24,7 +25,7 @@ function toJsonValue<T>(value: T): Prisma.InputJsonValue {
   return value as unknown as Prisma.InputJsonValue;
 }
 
-function defaultBundle(): UserDataBundle {
+function defaultBundle(): Omit<UserDataBundle, "usage"> {
   return {
     profile: null,
     settings: { ...DEFAULT_SETTINGS },
@@ -49,8 +50,11 @@ export async function getUserDataBundle(
   userId: string,
   options?: { includeResume?: boolean }
 ): Promise<UserDataBundle> {
-  const row = await prisma.userData.findUnique({ where: { userId } });
-  if (!row) return defaultBundle();
+  const [row, usage] = await Promise.all([
+    prisma.userData.findUnique({ where: { userId } }),
+    getUsageSnapshot(userId),
+  ]);
+  if (!row) return { ...defaultBundle(), usage };
 
   return {
     profile: row.profile
@@ -69,6 +73,7 @@ export async function getUserDataBundle(
     resumeFilename: row.resumeFilename,
     resumePdfBase64: options?.includeResume ? row.resumePdfBase64 : null,
     onboardingDone: row.onboardingDone,
+    usage,
   };
 }
 

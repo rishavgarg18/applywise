@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useSession } from "next-auth/react";
 import { ApiClient } from "@/lib/api-client";
+import type { UsageSnapshot } from "@/lib/credits";
 import type { Profile, Settings, TrackedJob, UserDataBundle } from "@/lib/types";
 
 type UserDataContextValue = {
@@ -17,6 +18,7 @@ type UserDataContextValue = {
   settings: Settings | null;
   trackedJobs: TrackedJob[];
   onboardingDone: boolean;
+  usage: UsageSnapshot | null;
   loaded: boolean;
   setProfile: (profile: Profile) => Promise<void>;
   setSettings: (settings: Settings) => Promise<void>;
@@ -99,6 +101,7 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
       settings: bundle?.settings ?? null,
       trackedJobs: bundle?.trackedJobs ?? [],
       onboardingDone: bundle?.onboardingDone ?? false,
+      usage: bundle?.usage ?? null,
       loaded,
       setProfile,
       setSettings,
