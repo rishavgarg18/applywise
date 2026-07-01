@@ -18,6 +18,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [resumeFilename, setResumeFilename] = useState<string | null>(null);
+  const [uploadWarning, setUploadWarning] = useState("");
 
   useEffect(() => {
     Storage.getResumeFilename().then(setResumeFilename);
@@ -30,8 +31,15 @@ export default function SettingsPage() {
       const base64 = btoa(
         new Uint8Array(buffer).reduce((d, b) => d + String.fromCharCode(b), "")
       );
-      const { profile: extracted } = await extractProfileFromResume(file);
+      const { profile: extracted, warning, qualityScore } =
+        await extractProfileFromResume(file);
       await setProfile({ ...profile!, ...extracted });
+      setUploadWarning(
+        warning ||
+          (qualityScore < 70
+            ? `Profile ${qualityScore}% complete — review experience and education.`
+            : "")
+      );
       await Storage.setResumeFilename(file.name);
       await Storage.setResumePdfBase64(base64);
       setResumeFilename(file.name);
@@ -102,6 +110,11 @@ export default function SettingsPage() {
               }}
             />
           </label>
+          {uploadWarning && (
+            <p className="mt-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              {uploadWarning}
+            </p>
+          )}
         </Card>
 
         <Card>

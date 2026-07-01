@@ -1,4 +1,5 @@
 let currentProfile = null;
+let currentQualityScore = null;
 let currentStep = 1;
 let currentJobContext = null;
 let lastKnownJobContext = null;
@@ -432,19 +433,18 @@ async function processPdfFile(file, statusId, stayOnApp = false) {
     throw new Error('Please upload a PDF file');
   }
 
-  let resumeText = '';
+  let resumeText = "";
+  let textWarning = "";
   try {
     resumeText = await extractTextFromPdfFile(file);
   } catch {
-    statusEl.textContent = 'Could not read PDF text';
-    statusEl.className = 'status error';
-    throw new Error('Could not read PDF text. Try exporting as a text-based PDF.');
+    textWarning = "Could not read PDF text locally — using server-side parsing.";
   }
 
   statusEl.textContent = 'Extracting profile...';
 
   const base64 = await fileToBase64(file);
-  const result = await sendMessage({ type: 'EXTRACT_PDF', base64, resumeText, filename: file.name });
+  const result = await sendMessage({ type: 'EXTRACT_PDF', base64, resumeText: resumeText || undefined, filename: file.name });
 
   if (!result.success) {
     if (isOutOfCredits(result)) {
@@ -457,9 +457,10 @@ async function processPdfFile(file, statusId, stayOnApp = false) {
   }
 
   currentProfile = { ...Storage.DEFAULT_PROFILE, ...result.profile };
+  currentQualityScore = result.qualityScore ?? null;
   refreshCredits();
-  statusEl.textContent = result.warning || 'Profile extracted!';
-  statusEl.className = result.warning ? 'status' : 'status success';
+  statusEl.textContent = [result.warning, textWarning].filter(Boolean).join(' ') || 'Profile extracted!';
+  statusEl.className = (result.warning || textWarning) ? 'status' : 'status success';
 
   if (!stayOnApp) {
     renderReviewPreview();
@@ -481,12 +482,25 @@ function renderReviewPreview() {
   const p = currentProfile;
   const expCount = (p.experiences || []).length;
   const eduCount = (p.education || []).length;
+  const score = currentQualityScore;
+  const scoreHtml = score != null
+    ? `<span class="quality-badge ${score >= 70 ? 'good' : score >= 50 ? 'ok' : 'low'}">${score}% complete</span>`
+    : '';
+  const expList = (p.experiences || []).slice(0, 4).map((e) =>
+  `<div class="exp-row">${esc(e.role || '—')} @ ${esc(e.company || '—')}</div>`
+  ).join('');
+  const eduList = (p.education || []).slice(0, 3).map((e) =>
+  `<div class="exp-row">${esc(e.degree || '—')} — ${esc(e.institution || '—')}</div>`
+  ).join('');
   el.innerHTML = `
+    <div class="review-header">${scoreHtml}</div>
     <strong>${esc(p.fullName || `${p.firstName || ''} ${p.lastName || ''}`.trim() || '—')}</strong><br>
     ${esc(p.email || '—')} · ${esc(p.phone || '—')}<br>
     ${esc(p.currentDesignation || '—')} @ ${esc(p.currentCompany || '—')}<br>
     Skills: ${esc(p.primarySkills || '—')}<br>
     <span class="muted">${expCount} experience · ${eduCount} education · ${(p.projects || []).length} projects</span>
+    ${expList ? `<div class="review-section"><strong>Experience</strong>${expList}</div>` : ''}
+    ${eduList ? `<div class="review-section"><strong>Education</strong>${eduList}</div>` : ''}
   `;
 }
 

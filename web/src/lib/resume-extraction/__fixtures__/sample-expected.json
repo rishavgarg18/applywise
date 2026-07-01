@@ -1,0 +1,50 @@
+{
+  "profile": {
+    "firstName": "Alex",
+    "lastName": "Johnson",
+    "fullName": "Alex Johnson",
+    "email": "alex.johnson@email.com",
+    "phone": "+1 555-123-4567",
+    "city": "San Francisco",
+    "state": "CA",
+    "country": "USA",
+    "currentDesignation": "Senior Software Engineer",
+    "currentCompany": "Tech Corp",
+    "primarySkills": "JavaScript, TypeScript, React, Node.js, Python",
+    "experiences": [
+      {
+        "company": "Tech Corp",
+        "role": "Senior Software Engineer",
+        "from": "Jan 2022",
+        "to": "Present",
+        "type": null,
+        "location": "San Francisco, CA",
+        "description": "Led frontend architecture for customer dashboard."
+      },
+      {
+        "company": "StartupXYZ",
+        "role": "Software Engineer",
+        "from": "Jun 2019",
+        "to": "Dec 2021",
+        "type": null,
+        "location": "Remote",
+        "description": "Built REST APIs and React components."
+      }
+    ],
+    "education": [
+      {
+        "degree": "B.Tech Computer Science",
+        "institution": "State University",
+        "from": "2015",
+        "to": "2019",
+        "percentage": "8.5 CGPA",
+        "stream": "Computer Science"
+      }
+    ],
+    "projects": [],
+    "certifications": [],
+    "achievements": []
+  },
+  "minQualityScore": 60,
+  "requiredFields": ["fullName", "email", "experiences", "education"]
+}

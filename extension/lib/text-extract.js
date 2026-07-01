@@ -303,35 +303,11 @@ function extractProfileFromText(resumeText) {
 
 function profileHasContent(profile) {
   if (!profile) return false;
-  return !!(
-    profile.fullName ||
-    profile.email ||
-    profile.primarySkills ||
-    profile.summary ||
-    (profile.experiences && profile.experiences.length) ||
-    (profile.education && profile.education.length)
+  const hasContact = profile.fullName && (profile.email || profile.phone);
+  const hasExp = (profile.experiences || []).some(
+    (e) => e.company && e.role && !/^[•\-\*●]\s/.test((e.company || '').trim())
   );
-}
-
-function mergeProfiles(local, remote) {
-  if (!remote) return local || {};
-  if (!local) return remote;
-  const merged = { ...local };
-
-  for (const [key, val] of Object.entries(remote)) {
-    if (val == null || val === '') continue;
-    if (Array.isArray(val)) {
-      const hasData = val.some((item) =>
-        item && typeof item === 'object' && Object.values(item).some((v) => v != null && v !== '')
-      );
-      if (hasData) merged[key] = val;
-    } else {
-      merged[key] = val;
-    }
-  }
-  return merged;
-}
-
-function extractBasicProfile(resumeText) {
-  return extractProfileFromText(resumeText);
+  const hasEdu = (profile.education || []).some((e) => e.degree || e.institution);
+  const hasSkills = profile.primarySkills && profile.primarySkills.length >= 8;
+  return !!(hasContact && (hasExp || hasEdu || hasSkills));
 }

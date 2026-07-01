@@ -1,4 +1,4 @@
-import type { Profile } from "./types";
+import type { ExtractionResult, Profile } from "./types";
 import { extractTextFromPdf } from "./pdf-text";
 
 async function postAi<T>(action: string, body: Record<string, unknown>): Promise<T> {
@@ -14,7 +14,7 @@ async function postAi<T>(action: string, body: Record<string, unknown>): Promise
 
 export async function extractProfileFromResume(
   file: File
-): Promise<{ profile: Profile; warning?: string }> {
+): Promise<ExtractionResult> {
   const buffer = await file.arrayBuffer();
   const base64 = btoa(
     new Uint8Array(buffer).reduce((d, b) => d + String.fromCharCode(b), "")
@@ -24,7 +24,7 @@ export async function extractProfileFromResume(
   try {
     resumeText = await extractTextFromPdf(file);
   } catch {
-    /* Gemini PDF path only */
+    /* server-side PDF parsing */
   }
 
   const res = await fetch("/api/ai", {
@@ -38,11 +38,11 @@ export async function extractProfileFromResume(
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Extraction failed");
-  return { profile: data.profile as Profile, warning: data.warning as string | undefined };
-}
-
-export async function extractProfileFromPdf(base64Pdf: string): Promise<Profile> {
-  return postAi<Profile>("extractProfileFromPdf", { base64Pdf });
+  return {
+    profile: data.profile as Profile,
+    qualityScore: (data.qualityScore as number) ?? 0,
+    warning: data.warning as string | undefined,
+  };
 }
 
 export async function generateCoverLetter(

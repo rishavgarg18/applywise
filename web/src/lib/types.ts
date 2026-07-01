@@ -154,6 +154,12 @@ export type UserDataBundle = {
   usage: UsageSnapshot;
 };
 
+export interface ExtractionResult {
+  profile: Profile;
+  qualityScore: number;
+  warning?: string;
+}
+
 export interface ContactSuggestion {
   id: string;
   name: string;

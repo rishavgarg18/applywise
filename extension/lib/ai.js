@@ -1,41 +1,40 @@
 async function extractProfile({ base64, resumeText }) {
-  const local = resumeText ? extractProfileFromText(resumeText) : null;
-  let geminiProfile = null;
   let geminiError = null;
 
-  // Single combined call — the server decides the best source (native PDF
-  // parsing preferred, extracted text as fallback) and returns a merged
-  // profile. This avoids the client guessing which path is most accurate.
   try {
-    const res = await Api.ai('extractProfile', { resumeText, base64Pdf: base64 });
-    geminiProfile = res.profile || null;
+    const res = await Api.ai('extractProfile', {
+      resumeText: resumeText || undefined,
+      base64Pdf: base64
+    });
+    if (res.profile) {
+      return {
+        profile: { ...Storage.DEFAULT_PROFILE, ...res.profile },
+        qualityScore: res.qualityScore ?? null,
+        warning: res.warning || null
+      };
+    }
   } catch (err) {
-    // Out of credits is a hard stop — surface it instead of silently using the
-    // local parser, so the user sees the buy-credits prompt.
     if (err?.code === 'OUT_OF_CREDITS' || err?.status === 402) throw err;
     geminiError = err;
   }
 
-  if (geminiProfile) {
-    return {
-      profile: { ...Storage.DEFAULT_PROFILE, ...mergeProfiles(local, geminiProfile) },
-      warning: null
-    };
-  }
-
-  if (local && profileHasContent(local)) {
-    let warning = 'Profile parsed locally from your PDF.';
-    if (geminiError?.message?.includes('429')) {
-      warning = 'Gemini quota exceeded — used local parser. Experience, skills, and education were extracted from your PDF.';
-    } else if (geminiError?.message?.includes('503')) {
-      warning = 'Gemini is busy — used local parser. Experience, skills, and education were extracted from your PDF.';
-    } else if (geminiError) {
-      warning = 'Gemini unavailable — used local parser instead.';
+  if (resumeText) {
+    const local = extractProfileFromText(resumeText);
+    if (profileHasContent(local)) {
+      let warning = 'Profile parsed locally from your PDF.';
+      if (geminiError?.message?.includes('429')) {
+        warning = 'Gemini quota exceeded — used local parser.';
+      } else if (geminiError?.message?.includes('503')) {
+        warning = 'Gemini is busy — used local parser.';
+      } else if (geminiError) {
+        warning = 'Gemini unavailable — used local parser instead.';
+      }
+      return {
+        profile: { ...Storage.DEFAULT_PROFILE, ...local },
+        qualityScore: null,
+        warning
+      };
     }
-    return {
-      profile: { ...Storage.DEFAULT_PROFILE, ...local },
-      warning
-    };
   }
 
   if (geminiError) throw geminiError;

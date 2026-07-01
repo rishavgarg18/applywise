@@ -27,8 +27,6 @@ export const ACTION_CONFIG: Record<
 /** Maps /api/ai action names to a metered bucket. Anything absent is free. */
 export const API_ACTION_TO_METERED: Record<string, MeteredAction> = {
   extractProfile: "resumeParse",
-  extractProfileFromPdf: "resumeParse",
-  extractProfileFromText: "resumeParse",
   generateCoverLetter: "coverLetter",
   generateReferralMessage: "referral",
   analyzeATS: "ats",

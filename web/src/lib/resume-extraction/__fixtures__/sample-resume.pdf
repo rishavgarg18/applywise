@@ -1,0 +1,72 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 680 >>
+stream
+BT
+/F1 14 Tf
+50 750 Td
+(Alex Johnson) Tj
+0 -20 Td
+(alex.johnson@email.com | +1 555-123-4567) Tj
+0 -20 Td
+(San Francisco, CA, USA) Tj
+0 -30 Td
+/F1 12 Tf
+(PROFESSIONAL SUMMARY) Tj
+0 -18 Td
+/F1 10 Tf
+(Experienced software engineer with 5+ years building web applications.) Tj
+0 -30 Td
+/F1 12 Tf
+(SKILLS) Tj
+0 -18 Td
+/F1 10 Tf
+(JavaScript, TypeScript, React, Node.js, Python) Tj
+0 -30 Td
+/F1 12 Tf
+(EXPERIENCE) Tj
+0 -18 Td
+/F1 10 Tf
+(Senior Software Engineer - Tech Corp    Jan 2022 - Present) Tj
+0 -14 Td
+(- Led frontend architecture for customer dashboard.) Tj
+0 -20 Td
+(Software Engineer - StartupXYZ    Jun 2019 - Dec 2021) Tj
+0 -14 Td
+(- Built REST APIs and React components.) Tj
+0 -30 Td
+/F1 12 Tf
+(EDUCATION) Tj
+0 -18 Td
+/F1 10 Tf
+(B.Tech Computer Science, 8.5 CGPA) Tj
+0 -14 Td
+(State University    2015 - 2019) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000266 00000 n 
+0000000999 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1078
+%%EOF

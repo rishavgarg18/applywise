@@ -33,13 +33,13 @@ async function handleMessage(message) {
   await Storage.init();
   switch (message.type) {
     case 'EXTRACT_PDF': {
-      const { profile, warning } = await extractProfile({
+      const { profile, warning, qualityScore } = await extractProfile({
         base64: message.base64,
         resumeText: message.resumeText
       });
       await Storage.set(Storage.KEYS.PROFILE, profile);
       if (message.filename) await Storage.set(Storage.KEYS.RESUME_FILENAME, message.filename);
-      return { success: true, profile, warning };
+      return { success: true, profile, warning, qualityScore };
     }
     case 'MAP_FIELDS': {
       const profile = await Storage.getProfile();

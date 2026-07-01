@@ -75,12 +75,6 @@ export async function POST(request: Request) {
         });
         return withCors(request, NextResponse.json(out));
       }
-      case "extractProfileFromPdf":
-        result = await gemini.extractProfileFromPdf(params.base64Pdf as string);
-        break;
-      case "extractProfileFromText":
-        result = await gemini.extractProfileFromText(params.resumeText as string);
-        break;
       case "generateCoverLetter":
         result = await gemini.generateCoverLetter(
           params.profile as Profile,
