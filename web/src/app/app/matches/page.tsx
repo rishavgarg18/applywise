@@ -3,41 +3,38 @@
 import { PageHeader } from "@/components/app/page-header";
 import { PageSkeleton } from "@/components/app/page-skeleton";
 import { JobCard } from "@/components/job-card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/input";
+import { useJobSearch } from "@/hooks/use-job-search";
 import { useProfile } from "@/hooks/use-profile";
-import { JOB_LISTINGS } from "@/lib/jobs-data";
-import { sortJobsByMatch } from "@/lib/match-score";
+import { profileHasMatchableData, sortJobsByMatch } from "@/lib/match-score";
 import { Storage } from "@/lib/storage";
 import type { JobListing, TrackedJob } from "@/lib/types";
-import { Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export default function MatchesPage() {
-  const { profile, loaded } = useProfile();
+  const { profile, settings, loaded } = useProfile();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [remoteOnly, setRemoteOnly] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const { data, loading, error } = useJobSearch(
+    {
+      q: query || undefined,
+      page,
+      remote: remoteOnly,
+      type: typeFilter,
+    },
+    loaded
+  );
 
   const jobs = useMemo(() => {
-    let filtered = sortJobsByMatch(JOB_LISTINGS, profile);
-    if (query) {
-      const q = query.toLowerCase();
-      filtered = filtered.filter(
-        (j) =>
-          j.title.toLowerCase().includes(q) ||
-          j.company.toLowerCase().includes(q) ||
-          j.skills.some((s) => s.toLowerCase().includes(q))
-      );
-    }
-    if (typeFilter !== "all") {
-      filtered = filtered.filter((j) => j.type === typeFilter);
-    }
-    if (remoteOnly) {
-      filtered = filtered.filter((j) => j.remote);
-    }
-    return filtered;
-  }, [profile, query, typeFilter, remoteOnly]);
+    if (!data?.jobs) return [];
+    return sortJobsByMatch(data.jobs, profile, { settings });
+  }, [data?.jobs, profile, settings]);
 
   const trackJob = async (job: JobListing, matchScore: number) => {
     const tracked: TrackedJob = {
@@ -57,11 +54,23 @@ export default function MatchesPage() {
 
   if (!loaded) return <PageSkeleton />;
 
+  const hasProfile = profileHasMatchableData(profile);
+  const searchHint =
+    data?.query && data?.location
+      ? `Searching "${data.query}" in ${data.location}`
+      : data?.query
+        ? `Searching "${data.query}"`
+        : null;
+
   return (
     <>
       <PageHeader
         title="Smart Opportunities"
-        description="Roles matched to your profile and preferences"
+        description={
+          hasProfile
+            ? "Live roles ranked by fit with your skills and preferences"
+            : "Complete your profile for better matches"
+        }
       />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -70,13 +79,19 @@ export default function MatchesPage() {
           <Input
             placeholder="Search by title, company, or skill..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
             className="pl-10"
           />
         </div>
         <Select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
+          onChange={(e) => {
+            setTypeFilter(e.target.value);
+            setPage(1);
+          }}
           className="sm:w-44"
         >
           <option value="all">All types</option>
@@ -88,25 +103,79 @@ export default function MatchesPage() {
           <input
             type="checkbox"
             checked={remoteOnly}
-            onChange={(e) => setRemoteOnly(e.target.checked)}
+            onChange={(e) => {
+              setRemoteOnly(e.target.checked);
+              setPage(1);
+            }}
             className="rounded accent-accent"
           />
           Remote only
         </label>
       </div>
 
-      <p className="text-sm text-muted mb-4">{jobs.length} opportunities found</p>
+      {searchHint && (
+        <p className="text-xs text-muted mb-2">{searchHint}</p>
+      )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {jobs.map((job) => (
-          <JobCard
-            key={job.id}
-            job={job}
-            matchScore={job.matchScore}
-            onTrack={(j) => trackJob(j, job.matchScore)}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-muted">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Finding roles that match your profile...
+        </div>
+      ) : error ? (
+        <div className="text-center py-16 text-muted">
+          <p>{error}</p>
+        </div>
+      ) : (
+        <>
+          <p className="text-sm text-muted mb-4">
+            {jobs.length} matched opportunit{jobs.length === 1 ? "y" : "ies"}
+            {data?.source === "adzuna" ? " · via Adzuna" : ""}
+          </p>
+
+          {jobs.length === 0 ? (
+            <div className="text-center py-16 text-muted">
+              <p className="font-medium text-foreground mb-1">No strong matches yet</p>
+              <p className="text-sm">
+                Try broadening your search or update target roles in Settings.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {jobs.map((job) => (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  matchScore={job.matchScore}
+                  onTrack={(j) => trackJob(j, job.matchScore)}
+                />
+              ))}
+            </div>
+          )}
+
+          {data && data.source === "adzuna" && data.total > jobs.length && (
+            <div className="flex justify-center mt-8 gap-3">
+              <Button
+                variant="outline"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              <span className="flex items-center text-sm text-muted px-2">
+                Page {page}
+              </span>
+              <Button
+                variant="outline"
+                disabled={loading || jobs.length < 20}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </>
+      )}
     </>
   );
 }

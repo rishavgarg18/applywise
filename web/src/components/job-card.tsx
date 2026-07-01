@@ -93,7 +93,12 @@ export function JobCard({
       </div>
 
       <div className="flex items-center justify-between pt-1">
-        <MatchScore score={matchScore} />
+        <div className="flex flex-col gap-0.5">
+          <MatchScore score={matchScore} />
+          {job.source === "adzuna" && (
+            <span className="text-[10px] text-muted">via Adzuna</span>
+          )}
+        </div>
         <div className="flex gap-2">
           {onTrack && (
             <Button

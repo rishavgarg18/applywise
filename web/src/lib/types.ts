@@ -130,6 +130,7 @@ export interface JobListing {
   postedAt: string;
   logo: string;
   url: string;
+  source?: string;
 }
 
 export interface JobList {

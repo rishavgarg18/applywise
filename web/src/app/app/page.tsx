@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageSkeleton } from "@/components/app/page-skeleton";
+import { useJobSearch } from "@/hooks/use-job-search";
 import { useProfile } from "@/hooks/use-profile";
-import { JOB_LISTINGS } from "@/lib/jobs-data";
 import { sortJobsByMatch } from "@/lib/match-score";
 import {
   ArrowRight,
@@ -20,7 +20,8 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 export default function DashboardPage() {
-  const { profile, onboardingDone, trackedJobs, loaded } = useProfile();
+  const { profile, settings, onboardingDone, trackedJobs, loaded } = useProfile();
+  const { data, loading: jobsLoading } = useJobSearch({}, loaded && onboardingDone);
 
   const stats = useMemo(
     () => ({
@@ -31,9 +32,13 @@ export default function DashboardPage() {
     [trackedJobs]
   );
 
+  const topMatches = useMemo(() => {
+    if (!data?.jobs) return [];
+    return sortJobsByMatch(data.jobs, profile, { settings }).slice(0, 3);
+  }, [data?.jobs, profile, settings]);
+
   if (!loaded) return <PageSkeleton />;
 
-  const topMatches = sortJobsByMatch(JOB_LISTINGS, profile).slice(0, 3);
   const name = profile?.fullName?.split(" ")[0] || "there";
 
   return (
@@ -94,22 +99,34 @@ export default function DashboardPage() {
       </div>
 
       <div className="space-y-3">
-        {topMatches.map((job) => (
-          <Card key={job.id} className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-10 w-10 rounded-xl bg-violet-dim flex items-center justify-center text-violet font-bold text-sm shrink-0">
-                {job.logo}
-              </div>
-              <div className="min-w-0">
-                <p className="font-medium truncate">{job.title}</p>
-                <p className="text-sm text-muted truncate">
-                  {job.company} · {job.location}
-                </p>
-              </div>
-            </div>
-            <Badge variant="accent">{job.matchScore}% match</Badge>
+        {jobsLoading ? (
+          <Card className="py-8 text-center text-sm text-muted">
+            Loading personalized matches...
           </Card>
-        ))}
+        ) : topMatches.length === 0 ? (
+          <Card className="py-8 text-center text-sm text-muted">
+            {onboardingDone
+              ? "No strong matches yet — browse Opportunities to explore roles."
+              : "Complete your profile to see matched roles."}
+          </Card>
+        ) : (
+          topMatches.map((job) => (
+            <Card key={job.id} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-xl bg-violet-dim flex items-center justify-center text-violet font-bold text-sm shrink-0">
+                  {job.logo}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{job.title}</p>
+                  <p className="text-sm text-muted truncate">
+                    {job.company} · {job.location}
+                  </p>
+                </div>
+              </div>
+              <Badge variant="accent">{job.matchScore}% match</Badge>
+            </Card>
+          ))
+        )}
       </div>
 
       <Card className="mt-8 bg-violet-dim/30 border-violet/20">
