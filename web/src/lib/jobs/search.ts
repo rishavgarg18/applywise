@@ -32,34 +32,17 @@ function parseSalaryMin(minSalary: string): number | undefined {
   return Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
-function topSkills(profile: Profile | null, limit = 3): string[] {
-  if (!profile?.primarySkills) return [];
-  return profile.primarySkills
-    .split(/[,;/|\n]+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, limit);
-}
-
+/** Role-only query for Adzuna — skills are matched client-side, not in the API call. */
 export function buildSearchQuery(
   profile: Profile | null,
   settings: Settings | null,
   overrides: JobSearchParams = {}
 ): { q: string; location: string; salaryMin?: number } {
-  const skills = topSkills(profile);
-  const roleQuery =
+  const q =
     overrides.q?.trim() ||
     settings?.targetRoles?.split(",")[0]?.trim() ||
     profile?.currentDesignation?.trim() ||
-    skills[0] ||
-    "software engineer";
-
-  const skillSuffix =
-    skills.length > 1 && !overrides.q
-      ? ` ${skills.slice(1, 3).join(" ")}`
-      : "";
-
-  const q = `${roleQuery}${skillSuffix}`.trim().slice(0, 120);
+    "software developer";
 
   const location =
     overrides.location?.trim() ||

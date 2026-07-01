@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { JobListing } from "@/lib/types";
 
 export type JobSearchResponse = {
@@ -12,7 +12,7 @@ export type JobSearchResponse = {
   location: string;
 };
 
-type JobSearchFilters = {
+export type JobSearchFilters = {
   q?: string;
   location?: string;
   page?: number;
@@ -20,19 +20,19 @@ type JobSearchFilters = {
   type?: string;
 };
 
-export function useJobSearch(filters: JobSearchFilters, enabled = true) {
+export function useJobSearch() {
   const [data, setData] = useState<JobSearchResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const fetchJobs = useCallback(async () => {
-    if (!enabled) return;
+  const search = useCallback(async (filters: JobSearchFilters) => {
     setLoading(true);
     setError(null);
 
     const params = new URLSearchParams();
-    if (filters.q) params.set("q", filters.q);
-    if (filters.location) params.set("location", filters.location);
+    if (filters.q?.trim()) params.set("q", filters.q.trim());
+    if (filters.location?.trim()) params.set("location", filters.location.trim());
     if (filters.page) params.set("page", String(filters.page));
     if (filters.remote) params.set("remote", "true");
     if (filters.type && filters.type !== "all") params.set("type", filters.type);
@@ -44,17 +44,15 @@ export function useJobSearch(filters: JobSearchFilters, enabled = true) {
         throw new Error(body.error || "Failed to load jobs");
       }
       setData(await res.json());
+      setHasSearched(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load jobs");
       setData(null);
+      setHasSearched(true);
     } finally {
       setLoading(false);
     }
-  }, [enabled, filters.q, filters.location, filters.page, filters.remote, filters.type]);
+  }, []);
 
-  useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
-
-  return { data, loading, error, refresh: fetchJobs };
+  return { data, loading, error, hasSearched, search };
 }

@@ -3,11 +3,8 @@
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { PageSkeleton } from "@/components/app/page-skeleton";
-import { useJobSearch } from "@/hooks/use-job-search";
 import { useProfile } from "@/hooks/use-profile";
-import { sortJobsByMatch } from "@/lib/match-score";
 import {
   ArrowRight,
   BarChart3,
@@ -20,8 +17,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 export default function DashboardPage() {
-  const { profile, settings, onboardingDone, trackedJobs, loaded } = useProfile();
-  const { data, loading: jobsLoading } = useJobSearch({}, loaded && onboardingDone);
+  const { profile, onboardingDone, trackedJobs, loaded } = useProfile();
 
   const stats = useMemo(
     () => ({
@@ -31,11 +27,6 @@ export default function DashboardPage() {
     }),
     [trackedJobs]
   );
-
-  const topMatches = useMemo(() => {
-    if (!data?.jobs) return [];
-    return sortJobsByMatch(data.jobs, profile, { settings }).slice(0, 3);
-  }, [data?.jobs, profile, settings]);
 
   if (!loaded) return <PageSkeleton />;
 
@@ -89,47 +80,23 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Top Matches For You</h2>
-        <Link href="/app/matches">
-          <Button variant="ghost" size="sm">
-            View all <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
-      </div>
+      <Card className="mb-8">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold mb-1">Find matched roles</h2>
+            <p className="text-sm text-muted">
+              Search live listings on Opportunities — results ranked against your profile.
+            </p>
+          </div>
+          <Link href="/app/matches">
+            <Button>
+              Search jobs <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </Card>
 
-      <div className="space-y-3">
-        {jobsLoading ? (
-          <Card className="py-8 text-center text-sm text-muted">
-            Loading personalized matches...
-          </Card>
-        ) : topMatches.length === 0 ? (
-          <Card className="py-8 text-center text-sm text-muted">
-            {onboardingDone
-              ? "No strong matches yet — browse Opportunities to explore roles."
-              : "Complete your profile to see matched roles."}
-          </Card>
-        ) : (
-          topMatches.map((job) => (
-            <Card key={job.id} className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="h-10 w-10 rounded-xl bg-violet-dim flex items-center justify-center text-violet font-bold text-sm shrink-0">
-                  {job.logo}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{job.title}</p>
-                  <p className="text-sm text-muted truncate">
-                    {job.company} · {job.location}
-                  </p>
-                </div>
-              </div>
-              <Badge variant="accent">{job.matchScore}% match</Badge>
-            </Card>
-          ))
-        )}
-      </div>
-
-      <Card className="mt-8 bg-violet-dim/30 border-violet/20">
+      <Card className="bg-violet-dim/30 border-violet/20">
         <div className="flex items-center gap-3">
           <Bookmark className="h-5 w-5 text-violet" />
           <div className="flex-1">
