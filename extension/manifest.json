@@ -3,7 +3,7 @@
   "name": "Applywise: Job Application Autofill",
   "short_name": "Applywise",
   "version": "1.8.1",
-  "description": "Autofill Naukri, LinkedIn & Indeed job applications in one click. AI resume parser builds your profile once — apply faster on 50+ job boards.",
+  "description": "AI Autofill job applications in one click. AI resume parser builds your profile once — apply faster on 50+ job boards.",
   "permissions": ["storage", "activeTab", "scripting", "identity"],
   "host_permissions": [
     "https://accounts.google.com/*",
