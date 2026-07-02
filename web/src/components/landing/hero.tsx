@@ -1,54 +1,62 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Puzzle } from "lucide-react";
 
 const companies = [
-  "Stripe", "Notion", "Vercel", "Spotify", "Discord", "Figma", "Datadog", "Google",
+  "Google",
+  "Stripe",
+  "Notion",
+  "Vercel",
+  "Spotify",
+  "Meta",
+  "Amazon",
+  "Flipkart",
+  "Razorpay",
+  "Swiggy",
 ];
 
 export function Hero() {
   return (
-    <section className="hero-glow relative overflow-hidden pt-32 pb-20">
+    <section className="hero-glow mesh-bg relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 text-center">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-1.5 text-sm text-muted">
-          <Sparkles className="h-4 w-4 text-accent" />
-          Your career command center — powered by one profile
-        </div>
-        <h1 className="mx-auto max-w-4xl text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
-          Land your next role with{" "}
-          <span className="gradient-text">intelligent job search</span>
+        <h1 className="mx-auto max-w-4xl text-4xl font-bold leading-[1.12] tracking-tight sm:text-6xl lg:text-[4.25rem]">
+          Your AI job search companion.
+          <br />
+          <span className="gradient-text">Built around one profile.</span>
         </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg text-muted">
-          Discover matched opportunities, tailor your resume, autofill applications,
-          and manage your entire search pipeline — all from a single profile.
+        <p className="mx-auto mt-6 max-w-2xl text-lg text-muted sm:text-xl leading-relaxed">
+          Search matched roles, tailor your resume, autofill applications on
+          Naukri and LinkedIn, and track every opportunity — without retyping
+          yourself into every form.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Link href="/login">
-            <Button size="lg">
-              Build Your Profile
+            <Button size="lg" className="min-w-[200px]">
+              Get Started — It&apos;s Free
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <Link href="/login">
-            <Button size="lg" variant="outline">
-              Browse Opportunities
+          <Link href="/extension">
+            <Button size="lg" variant="outline" className="min-w-[200px]">
+              <Puzzle className="h-4 w-4" />
+              Chrome Extension
             </Button>
           </Link>
         </div>
         <p className="mt-6 text-sm text-muted">
-          Free forever · No credit card · Join 50,000+ job seekers
+          Free core tools · Naukri &amp; LinkedIn autofill · India &amp; global roles
         </p>
 
         <div className="mt-16 overflow-hidden">
-          <p className="mb-4 text-xs uppercase tracking-widest text-muted">
-            Opportunities from leading companies
+          <p className="mb-5 text-xs uppercase tracking-[0.2em] text-muted">
+            Apply faster at companies like
           </p>
-          <div className="relative flex overflow-hidden">
-            <div className="animate-marquee flex shrink-0 gap-12">
+          <div className="relative flex overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+            <div className="animate-marquee flex shrink-0 gap-14">
               {[...companies, ...companies].map((c, i) => (
                 <span
                   key={`${c}-${i}`}
-                  className="text-lg font-semibold text-muted/60 whitespace-nowrap"
+                  className="text-base font-semibold text-muted/50 whitespace-nowrap"
                 >
                   {c}
                 </span>

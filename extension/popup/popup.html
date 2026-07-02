@@ -178,6 +178,20 @@
 
   <input type="file" id="hidden-resume-input" accept=".pdf,application/pdf" hidden>
 
+  <div id="parse-overlay" class="parse-overlay hidden" aria-live="polite" aria-busy="true">
+    <div class="parse-overlay-card">
+      <div class="parse-spinner" aria-hidden="true"></div>
+      <h3 class="parse-overlay-title">Parsing your resume</h3>
+      <p class="parse-overlay-warning">
+        Do not switch tabs, close this popup, or click anywhere until parsing is complete.
+      </p>
+      <p id="parse-overlay-status" class="parse-overlay-status">Reading PDF…</p>
+      <div class="parse-progress-track" aria-hidden="true">
+        <div class="parse-progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
   <script src="../lib/pdf.min.js"></script>
   <script src="../lib/config.js"></script>
   <script src="../lib/api.js"></script>

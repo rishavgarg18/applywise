@@ -2,7 +2,10 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { siteConfig } from "@/lib/site";
+import Link from "next/link";
 import {
+  Puzzle,
   Download,
   Zap,
   Shield,
@@ -14,28 +17,33 @@ const SUPPORTED_SITES = [
   "Naukri.com",
   "LinkedIn Easy Apply",
   "Internshala",
-  "Indeed",
+  "Indeed India",
   "Unstop",
   "Wellfound",
   "Cutshort",
   "Shine.com",
   "WorkIndia",
+  "Greenhouse",
+  "Lever",
   "Any HTML form",
 ];
 
 const STEPS = [
   "Install the Applywise Chrome extension",
-  "Upload your resume in the extension popup",
+  "Sign in and upload your resume in the popup",
   "Navigate to any job application page",
-  "Click the ⚡ button to autofill every field",
+  "Click Autofill This Page in the extension",
 ];
 
 export default function CopilotPage() {
+  const storeUrl = siteConfig.chromeExtensionUrl;
+  const installHref = storeUrl || "/extension";
+
   return (
     <>
       <PageHeader
         title="Browser Assistant"
-        description="Autofill any job application in one click with our Chrome extension"
+        description="Autofill Naukri, LinkedIn, Indeed, and 50+ job boards in one click"
       />
 
       <Card className="mb-8 bg-gradient-to-br from-accent-dim/40 to-violet-dim/40 border-accent/20">
@@ -46,27 +54,29 @@ export default function CopilotPage() {
           <div className="flex-1 text-center sm:text-left">
             <h2 className="text-xl font-bold">Applywise Chrome Extension</h2>
             <p className="text-muted mt-2">
-              Upload your resume once. AI reads every form field and fills your
-              application automatically — works on 50+ job boards.
+              Upload your resume once. AI maps every form field and fills your
+              application — works on Naukri, LinkedIn Easy Apply, Indeed, and more.
             </p>
             <div className="flex flex-wrap gap-2 mt-4 justify-center sm:justify-start">
-              <Badge variant="accent">Free forever</Badge>
-              <Badge variant="violet">No login required</Badge>
-              <Badge variant="default">200M+ fields filled</Badge>
+              <Badge variant="accent">Free core features</Badge>
+              <Badge variant="violet">Profile sync</Badge>
+              <Badge variant="default">50+ job boards</Badge>
             </div>
           </div>
-          <Button size="lg" className="shrink-0">
-            <Download className="h-5 w-5" />
-            Add to Chrome
-          </Button>
+          <a href={installHref} target={storeUrl ? "_blank" : undefined} rel={storeUrl ? "noopener noreferrer" : undefined}>
+            <Button size="lg" className="shrink-0">
+              {storeUrl ? <Download className="h-5 w-5" /> : <Puzzle className="h-5 w-5" />}
+              {storeUrl ? "Add to Chrome" : "Extension page"}
+            </Button>
+          </a>
         </div>
       </Card>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {[
           { icon: Zap, title: "One-click autofill", desc: "Fill entire applications in seconds" },
-          { icon: Shield, title: "Local storage", desc: "Your data never leaves your device" },
-          { icon: Globe, title: "50+ job boards", desc: "Works on major platforms worldwide" },
+          { icon: Shield, title: "Account sync", desc: "Same profile on web and extension" },
+          { icon: Globe, title: "50+ job boards", desc: "Naukri, LinkedIn, Indeed India & more" },
           { icon: CheckCircle, title: "AI-powered", desc: "Smart field mapping with Gemini" },
         ].map((f) => (
           <Card key={f.title}>
@@ -102,8 +112,11 @@ export default function CopilotPage() {
             ))}
           </div>
           <p className="text-sm text-muted mt-4">
-            The extension also works on any generic HTML form with 3+ input fields.
-            A floating ⚡ button appears automatically on supported sites.
+            Also works on generic HTML forms with 3+ input fields. See the{" "}
+            <Link href="/extension" className="text-accent hover:underline">
+              extension page
+            </Link>{" "}
+            for SEO-friendly install details.
           </p>
         </Card>
       </div>

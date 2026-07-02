@@ -5,34 +5,36 @@ import { ArrowRight } from "lucide-react";
 const steps = [
   {
     step: "01",
-    title: "Build your profile",
+    title: "Upload your resume once",
     description:
-      "Upload your resume once. Our AI extracts your experience, skills, and preferences into a complete profile.",
+      "Our AI extracts your experience, skills, and education into a complete profile — synced across web and extension.",
   },
   {
     step: "02",
-    title: "Discover matched roles",
+    title: "Find roles that fit",
     description:
-      "Set dealbreakers and preferences. We surface opportunities from 20,000+ companies that fit your criteria.",
+      "Search live opportunities ranked against your profile. Set target roles, location, and preferences in Settings.",
   },
   {
     step: "03",
-    title: "Apply with confidence",
+    title: "Apply faster, track everything",
     description:
-      "Tailor your resume, generate cover letters, autofill applications, and track everything in your pipeline.",
+      "Autofill applications with the extension, tailor your resume, generate cover letters, and track every stage in your pipeline.",
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 border-y border-border">
+    <section id="how-it-works" className="py-24 border-y border-border/60 bg-surface/30">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold sm:text-4xl">
-            Three steps to your next role
+            Tell us about your career.
+            <br />
+            <span className="gradient-text">We&apos;ll help you land the role.</span>
           </h2>
         </div>
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-10 md:grid-cols-3">
           {steps.map((s) => (
             <div key={s.step} className="relative">
               <span className="text-5xl font-bold text-accent/20">{s.step}</span>
@@ -41,10 +43,10 @@ export function HowItWorks() {
             </div>
           ))}
         </div>
-        <div className="mt-12 text-center">
+        <div className="mt-14 text-center">
           <Link href="/login">
             <Button size="lg">
-              Start Your Profile
+              Create Your Profile
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>

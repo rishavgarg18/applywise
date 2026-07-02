@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0b1120;
-  --surface: #111827;
-  --surface2: #1f2937;
-  --border: #374151;
-  --text: #f3f4f6;
-  --muted: #9ca3af;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-dim: rgba(59, 130, 246, 0.12);
-  --violet: #6366f1;
-  --violet-dim: rgba(99, 102, 241, 0.12);
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --bg: #0a0f1a;
+  --surface: #0f172a;
+  --surface2: #1e293b;
+  --border: #334155;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --accent: #2dd4bf;
+  --accent-hover: #14b8a6;
+  --accent-dim: rgba(45, 212, 191, 0.12);
+  --violet: #818cf8;
+  --violet-dim: rgba(129, 140, 248, 0.12);
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
 }
 
 @theme inline {
@@ -63,11 +63,16 @@ body {
 }
 
 .hero-glow {
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(59, 130, 246, 0.15),
-    transparent
-  );
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -30%, rgba(45, 212, 191, 0.18), transparent),
+    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(129, 140, 248, 0.08), transparent);
+}
+
+.mesh-bg {
+  background-image:
+    linear-gradient(rgba(45, 212, 191, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 212, 191, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
 }
 
 @keyframes float {

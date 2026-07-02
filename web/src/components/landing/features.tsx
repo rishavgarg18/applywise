@@ -15,63 +15,63 @@ const features = [
     icon: Search,
     title: "Smart Opportunities",
     description:
-      "Stop endless scrolling. Set your preferences and get matched with roles that actually fit your skills and goals.",
+      "Search live job listings ranked by fit with your profile. No endless scrolling through irrelevant roles.",
     color: "text-accent",
     bg: "bg-accent-dim",
   },
   {
     icon: Zap,
-    title: "Browser Assistant",
+    title: "Copilot Extension",
     description:
-      "Install our Chrome extension to autofill any job application form in seconds. Works on 50+ job boards.",
+      "One-click autofill on LinkedIn, Naukri, Indeed India, and dozens more application sites.",
     color: "text-violet",
     bg: "bg-violet-dim",
   },
   {
     icon: PenTool,
-    title: "Resume Studio",
+    title: "AI Resume Studio",
     description:
-      "Tailor your resume for each role with AI. Optimize keywords, rewrite sections, and boost your ATS score.",
+      "Tailor your resume per role, rewrite sections with AI, and improve your ATS score before you apply.",
     color: "text-accent",
     bg: "bg-accent-dim",
   },
   {
     icon: Bookmark,
-    title: "Pipeline Board",
+    title: "Pipeline Tracker",
     description:
-      "Track every application from saved to offer. Visual kanban board replaces messy spreadsheets forever.",
+      "Kanban board for saved → applied → interview → offer. Replace messy spreadsheets forever.",
     color: "text-violet",
     bg: "bg-violet-dim",
   },
   {
     icon: BarChart3,
-    title: "Resume Health Check",
+    title: "ATS Score Check",
     description:
-      "See how your resume scores against any job description. Get actionable fixes and missing keyword alerts.",
+      "Paste a job description and see how your resume scores — plus missing keywords to add.",
     color: "text-success",
     bg: "bg-success/15",
   },
   {
     icon: FileText,
-    title: "Letter Craft",
+    title: "Cover Letters",
     description:
-      "Generate tailored cover letters in seconds. Each one matches your experience to the specific role.",
+      "Generate tailored cover letters in seconds, matched to the role and your experience.",
     color: "text-accent",
     bg: "bg-accent-dim",
   },
   {
     icon: Mail,
-    title: "Outreach Drafts",
+    title: "Outreach Emails",
     description:
-      "Craft networking emails, follow-ups, and thank-you notes with AI. Professional tone, every time.",
+      "Draft networking messages, follow-ups, and referral requests with a professional tone.",
     color: "text-violet",
     bg: "bg-violet-dim",
   },
   {
     icon: Users,
-    title: "Contact Finder",
+    title: "Networking",
     description:
-      "Discover hiring managers and team leads at target companies. Draft personalized outreach messages.",
+      "Import LinkedIn contacts and draft personalized outreach for referrals and intros.",
     color: "text-accent",
     bg: "bg-accent-dim",
   },
@@ -83,22 +83,23 @@ export function Features() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold sm:text-4xl">
-            Everything you need to{" "}
+            More tools to help you{" "}
             <span className="gradient-text">stand out</span>
           </h2>
           <p className="mt-4 text-muted max-w-2xl mx-auto">
-            From discovery to offer letter — one platform handles your entire job search workflow.
+            Everything you need from first search to signed offer — one platform,
+            one profile.
           </p>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((f) => (
-            <Card key={f.title} className="hover:border-border/80">
+            <Card key={f.title} className="hover:border-accent/30 transition-colors">
               <div
                 className={`mb-4 inline-flex rounded-xl p-3 ${f.bg} ${f.color}`}
               >
                 <f.icon className="h-5 w-5" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
+              <h3 className="font-semibold mb-2">{f.title}</h3>
               <p className="text-sm text-muted leading-relaxed">
                 {f.description}
               </p>

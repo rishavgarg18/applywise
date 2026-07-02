@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Applywise",
-  "version": "1.7.0",
-  "description": "Upload your resume once. AI autofills every job application form.",
+  "name": "Applywise: Job Application Autofill",
+  "short_name": "Applywise",
+  "version": "1.8.1",
+  "description": "Autofill Naukri, LinkedIn & Indeed job applications in one click. AI resume parser builds your profile once — apply faster on 50+ job boards.",
   "permissions": ["storage", "activeTab", "scripting", "identity"],
   "host_permissions": [
     "https://accounts.google.com/*",
@@ -12,10 +13,21 @@
   ],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_icon": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+    "default_title": "Applywise",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
-  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
-  "background": { "service_worker": "background/service-worker.js" },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
   "content_scripts": [
     {
       "matches": ["https://*/*", "http://*/*"],
@@ -38,8 +50,10 @@
       "http://localhost:3000/*"
     ]
   },
-  "web_accessible_resources": [{
-    "resources": ["lib/pdf.worker.min.js"],
-    "matches": ["<all_urls>"]
-  }]
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/pdf.worker.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

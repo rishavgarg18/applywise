@@ -11,6 +11,25 @@ function isOutOfCredits(err) {
   return err?.code === 'OUT_OF_CREDITS' || /out of (free )?credits/i.test(err?.message || '');
 }
 
+function showParseOverlay(statusText) {
+  const overlay = document.getElementById('parse-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  document.body.classList.add('parse-locked');
+  updateParseOverlayStatus(statusText || 'Reading PDF…');
+}
+
+function hideParseOverlay() {
+  const overlay = document.getElementById('parse-overlay');
+  if (overlay) overlay.classList.add('hidden');
+  document.body.classList.remove('parse-locked');
+}
+
+function updateParseOverlayStatus(text) {
+  const el = document.getElementById('parse-overlay-status');
+  if (el && text) el.textContent = text;
+}
+
 async function refreshCredits() {
   try {
     const res = await sendMessage({ type: 'GET_CREDITS' });
@@ -423,48 +442,59 @@ async function handleResumeReplace(e) {
 
 async function processPdfFile(file, statusId, stayOnApp = false) {
   const statusEl = document.getElementById(statusId);
+  showParseOverlay('Reading PDF…');
   statusEl.classList.remove('hidden');
   statusEl.textContent = 'Reading PDF...';
   statusEl.className = 'status';
 
-  if (!file.type.includes('pdf')) {
-    statusEl.textContent = 'Please upload a PDF file';
-    statusEl.className = 'status error';
-    throw new Error('Please upload a PDF file');
-  }
-
-  let resumeText = "";
-  let textWarning = "";
   try {
-    resumeText = await extractTextFromPdfFile(file);
-  } catch {
-    textWarning = "Could not read PDF text locally — using server-side parsing.";
-  }
+    if (!file.type.includes('pdf')) {
+      statusEl.textContent = 'Please upload a PDF file';
+      statusEl.className = 'status error';
+      throw new Error('Please upload a PDF file');
+    }
 
-  statusEl.textContent = 'Extracting profile...';
+    let resumeText = "";
+    let textWarning = "";
+    try {
+      resumeText = await extractTextFromPdfFile(file);
+    } catch {
+      textWarning = "Could not read PDF text locally — using server-side parsing.";
+    }
 
-  const base64 = await fileToBase64(file);
-  const result = await sendMessage({ type: 'EXTRACT_PDF', base64, resumeText: resumeText || undefined, filename: file.name });
+    updateParseOverlayStatus('Extracting profile with AI…');
+    statusEl.textContent = 'Extracting profile...';
 
-  if (!result.success) {
-    if (isOutOfCredits(result)) {
-      showOutOfCredits(statusEl, result);
+    const base64 = await fileToBase64(file);
+    const result = await sendMessage({
+      type: 'EXTRACT_PDF',
+      base64,
+      resumeText: resumeText || undefined,
+      filename: file.name
+    });
+
+    if (!result.success) {
+      if (isOutOfCredits(result)) {
+        showOutOfCredits(statusEl, result);
+        throw new Error(result.error);
+      }
+      statusEl.textContent = result.error || 'Extraction failed';
+      statusEl.className = 'status error';
       throw new Error(result.error);
     }
-    statusEl.textContent = result.error || 'Extraction failed';
-    statusEl.className = 'status error';
-    throw new Error(result.error);
-  }
 
-  currentProfile = { ...Storage.DEFAULT_PROFILE, ...result.profile };
-  currentQualityScore = result.qualityScore ?? null;
-  refreshCredits();
-  statusEl.textContent = [result.warning, textWarning].filter(Boolean).join(' ') || 'Profile extracted!';
-  statusEl.className = (result.warning || textWarning) ? 'status' : 'status success';
+    currentProfile = { ...Storage.DEFAULT_PROFILE, ...result.profile };
+    currentQualityScore = result.qualityScore ?? null;
+    refreshCredits();
+    statusEl.textContent = [result.warning, textWarning].filter(Boolean).join(' ') || 'Profile extracted!';
+    statusEl.className = (result.warning || textWarning) ? 'status' : 'status success';
 
-  if (!stayOnApp) {
-    renderReviewPreview();
-    goToStep(2);
+    if (!stayOnApp) {
+      renderReviewPreview();
+      goToStep(2);
+    }
+  } finally {
+    hideParseOverlay();
   }
 }
 

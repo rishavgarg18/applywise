@@ -6,24 +6,24 @@ import { cn } from "@/lib/cn";
 
 const faqs = [
   {
-    q: "Is Applywise free?",
-    a: "Yes! The core platform — job matching, pipeline tracking, resume tools, and browser autofill — is free forever. We may offer premium AI features in the future, but your essential toolkit stays free.",
+    q: "Is Applywise free? How do you make money?",
+    a: "The core platform — profile, job search, pipeline tracking, resume tools, and extension autofill — is free. We may offer premium AI features and credits for heavy usage. We do not sell your personal data.",
   },
   {
-    q: "How does job matching work?",
-    a: "When you create a profile, you tell us your skills, target roles, locations, and dealbreakers. Our system matches you against opportunities from thousands of vetted companies and ranks them by fit.",
+    q: "How does Applywise work?",
+    a: "Create one profile from your resume. Search opportunities ranked by fit, tailor your resume for each role, autofill applications with the Chrome extension, and track everything in your pipeline board.",
   },
   {
     q: "How is my data handled?",
-    a: "Your data stays on your device. We don't sell your information. Profile data is used only to match you with jobs and power autofill. Nothing is shared without your consent.",
+    a: "Your resume and profile are stored securely on our servers to sync between web and extension. We use your data only to power matching, autofill, and AI features. See our Privacy Policy for full details.",
   },
   {
-    q: "Where do the job listings come from?",
-    a: "Most listings are sourced directly from company career pages. We regularly check 20,000+ companies for new openings. Some employers also post exclusive roles on our platform.",
+    q: "Where do job listings come from?",
+    a: "Opportunities are sourced from live job APIs (including Adzuna for India listings). Results are ranked against your profile after you search — we don't auto-fetch to save API usage.",
   },
   {
     q: "Do I need the Chrome extension?",
-    a: "The web platform handles matching, tracking, resume tools, and more. The Chrome extension adds one-click autofill on any job application page — highly recommended but optional.",
+    a: "The web app handles matching, tracking, and resume tools. The extension adds one-click autofill on job application pages — highly recommended for active applicants.",
   },
 ];
 
@@ -31,10 +31,11 @@ export function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="py-24 border-t border-border">
+    <section id="faq" className="py-24 border-t border-border/60">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold">Common questions</h2>
+          <h2 className="text-3xl font-bold">Got questions?</h2>
+          <p className="mt-3 text-muted">Everything you need to know before you start</p>
         </div>
         <div className="space-y-3">
           {faqs.map((faq, i) => (
@@ -49,7 +50,7 @@ export function FAQ() {
                 {faq.q}
                 <ChevronDown
                   className={cn(
-                    "h-5 w-5 text-muted transition-transform",
+                    "h-5 w-5 text-muted transition-transform shrink-0 ml-4",
                     open === i && "rotate-180"
                   )}
                 />

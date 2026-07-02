@@ -13,8 +13,8 @@
   --border: #374151;
   --text: #f3f4f6;
   --muted: #9ca3af;
-  --accent: #3b82f6;
-  --accent-dim: rgba(59, 130, 246, 0.12);
+  --accent: #2dd4bf;
+  --accent-dim: rgba(45, 212, 191, 0.12);
   --danger: #ef4444;
   --width: 360px;
   --font: 'Outfit', system-ui, sans-serif;
@@ -860,4 +860,89 @@ textarea {
   color: var(--muted);
   margin-bottom: 3px;
   font-weight: 600;
+}
+
+/* Resume parse loading overlay */
+body.parse-locked {
+  overflow: hidden;
+}
+
+.parse-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(11, 17, 32, 0.92);
+  backdrop-filter: blur(4px);
+}
+
+.parse-overlay-card {
+  width: 100%;
+  max-width: 300px;
+  text-align: center;
+  padding: 24px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+.parse-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: parseSpin 0.9s linear infinite;
+}
+
+@keyframes parseSpin {
+  to { transform: rotate(360deg); }
+}
+
+.parse-overlay-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.parse-overlay-warning {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #fbbf24;
+  margin-bottom: 14px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.parse-overlay-status {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.parse-progress-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface2);
+  overflow: hidden;
+}
+
+.parse-progress-bar {
+  height: 100%;
+  width: 35%;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: parseProgress 1.4s ease-in-out infinite;
+}
+
+@keyframes parseProgress {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
 }
